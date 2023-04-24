@@ -1,0 +1,4 @@
+build --experimental_cc_shared_library
+build --experimental_link_static_libraries_once
+test --experimental_cc_shared_library
+test --experimental_link_static_libraries_once
