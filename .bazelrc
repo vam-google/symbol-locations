@@ -1,4 +1,5 @@
-build --experimental_cc_shared_library
-build --experimental_link_static_libraries_once
-test --experimental_cc_shared_library
-test --experimental_link_static_libraries_once
+build:windows --windows_enable_symlinks
+build:windows --enable_runfiles
+build:test --windows_enable_symlinks
+build:test --enable_runfiles
+build:windows --features=compiler_param_file

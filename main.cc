@@ -14,8 +14,7 @@
 #include <iostream>
 
 #include "one.h"
-
-int b_duplicate();
+#include "two.h"
 
 int main() {
   std::cout << "Sum: " << sum() << std::endl;
