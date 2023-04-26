@@ -1,5 +1,8 @@
-build --cxxopt=-std=c++17
-test --cxxopt=-std=c++17
+build --enable_platform_specific_config=true
+test --enable_platform_specific_config=true
+
+build:linux --cxxopt=-std=c++17
+test:linux --cxxopt=-std=c++17
 
 build:windows --windows_enable_symlinks
 build:windows --enable_runfiles

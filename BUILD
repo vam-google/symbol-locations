@@ -23,7 +23,6 @@ cc_test(
     srcs = ["main_test.cc"],
     linkstatic = False,
     deps = [
-        "//:four",
         "//:one",
         "@gtest//:gtest_main",
     ],
