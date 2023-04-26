@@ -1,3 +1,6 @@
+build --cxxopt=-std=c++17
+test --cxxopt=-std=c++17
+
 build:windows --windows_enable_symlinks
 build:windows --enable_runfiles
 build:test --windows_enable_symlinks
