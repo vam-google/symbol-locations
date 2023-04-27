@@ -5,6 +5,7 @@
 
 int a() {
   staticallylinked();
+  inline_staticallylinked();
   return 1;
 }
 

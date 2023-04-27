@@ -12,5 +12,9 @@ TEST(OneTest, BDuplicate) {
 }
 
 TEST(OneTest, staticallylinked) {
-  EXPECT_EQ(staticallylinked(), 4);
+  EXPECT_EQ(staticallylinked(), EXTERN_TOKEN);
+}
+
+TEST(OneTest, inline_staticallylinked) {
+  EXPECT_NE(inline_staticallylinked(), INLINE_TOKEN);
 }
