@@ -7,3 +7,7 @@ int b() {
 int b_duplicate() {
   return 2;
 }
+
+int BClass::b_method() {
+  return 2;
+}

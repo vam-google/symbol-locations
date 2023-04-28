@@ -18,3 +18,11 @@ TEST(OneTest, staticallylinked) {
 TEST(OneTest, inline_staticallylinked) {
   EXPECT_NE(inline_staticallylinked(), INLINE_TOKEN);
 }
+
+TEST(OneTest, BClassMethod) {
+  BClass b;
+  b.b_method();
+
+  EXPECT_EQ(b.b_method(), 2);
+  EXPECT_EQ(b.b_method_inline(), 2);
+}
