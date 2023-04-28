@@ -5,15 +5,22 @@ int b();
 int b_duplicate();
 
 class BClass {
+ private:
+  int my_var;
+
  public:
-  BClass() {
+  BClass(int v);
+  virtual ~BClass() {}
+
+  virtual inline int b_method_inline() {
+    return 22 + my_var;
   }
 
-  int b_method_inline() {
-    return 2;
+  inline int b_method_inline_non_virtual() {
+    return 222;
   }
 
-  int b_method();
+  virtual int b_method();
 };
 
 #endif  // _TWO_H_
