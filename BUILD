@@ -18,6 +18,14 @@ cc_binary(
     deps = ["one"],
 )
 
+cc_binary(
+    name = "main_static_shared",
+    srcs = ["main.cc"],
+    linkshared = True,
+    linkstatic = True,
+    deps = ["one"],
+)
+
 cc_test(
     name = "main_test_dynamic",
     srcs = ["main_test.cc"],
@@ -40,7 +48,10 @@ cc_test(
 
 cc_library(
     name = "one",
-    srcs = ["one.cc"],
+    srcs = [
+        "one.cc",
+        "one_one.cc",
+    ],
     hdrs = ["one.h"],
     linkstatic = False,
     deps = [

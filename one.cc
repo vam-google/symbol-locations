@@ -10,10 +10,14 @@ int AClass::b_method() {
 int a() {
   staticallylinked();
   inline_staticallylinked();
-  BClass b(0);
-  int v = b.b_method() + b.b_method_inline();
-  AClass a(1);
-  return 1 + v - b.b_method() - b.b_method_inline();
+  BClass* b = new BClass(0);
+  BClass* a = new AClass(1);
+  int v = b->b_method() + b->b_method_inline() + a->b_method() - a->b_method_inline();
+  v = 1 - v + v + b->b_method_inline_non_virtual() - ((AClass*) a)->b_method_inline_non_virtual();
+  v -= b->b_method_inline_non_virtual() - ((AClass*) a)->b_method_inline_non_virtual();
+  delete b;
+  delete a;
+  return v;
 }
 
 int sum() {
