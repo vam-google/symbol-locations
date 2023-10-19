@@ -1,5 +1,8 @@
 startup --windows_enable_symlinks
 
+build --verbose_failures
+test --verbose_failures
+
 build --strip=always
 test --strip=always
 build --compilation_mode=opt
