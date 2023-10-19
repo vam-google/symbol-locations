@@ -1,5 +1,7 @@
 #include "second.h"
 
+static int my_global = 0;
+
 int second(int x) {
-  return x + 5;
+  return x + my_global++;;
 }

@@ -2,5 +2,5 @@
 #include "second.h"
 
 int first(int x) {
-  return second(x) * 3;
+  return second(x) + 1;
 }

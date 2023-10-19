@@ -3,9 +3,9 @@
 #include "second.h"
 
 TEST(FirstTest, First) {
-  EXPECT_EQ(first(2), 21);
+  EXPECT_EQ(first(1), 2);
 }
 
 TEST(SecondTest, Second) {
-  EXPECT_EQ(second(2), 7);
+  EXPECT_EQ(second(1), 2);
 }

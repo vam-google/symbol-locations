@@ -325,6 +325,29 @@ cc_library(
 )
 
 #
+# Raw tests
+#
+cc_test(
+    name = "raw_test_0__first_00__second_00",
+    srcs = [":links_test.cc", ],
+    deps = [
+        ":first_00__second_00",
+        "@gtest//:gtest_main"
+    ],
+    linkstatic = False,
+)
+
+cc_test(
+    name = "raw_test_0__first_00__second_10",
+    srcs = [":links_test.cc", ],
+    deps = [
+        ":first_00__second_10",
+        "@gtest//:gtest_main"
+    ],
+    linkstatic = False,
+)
+
+#
 # binary linking variants (links first library)
 #
 cc_binary(
@@ -609,7 +632,10 @@ cc_binary(
     srcs = ["links_shared.cc"],
     deps = [":first_11__second_11"],
     linkstatic = False,
-    linkshared = True
+    linkshared = True,
+    features = [
+        "windows_export_all_symbols",
+    ],
 )
 
 cc_binary(
