@@ -1,5 +1,6 @@
 startup --windows_enable_symlinks
 
+build --experimental_cc_shared_library
 build --verbose_failures
 test --verbose_failures
 
