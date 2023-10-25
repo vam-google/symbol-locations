@@ -37,10 +37,11 @@ cc_library(
 
 cc_binary(
     name = "binary_pybind_pyext",
-    deps = [":pybind_pyext_first_00_first_00_second_00"],
+    deps = [":pybind_pyext_first_00_first_00_second_00", ":pybind_pyext.lds"],
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext.def",
+    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext.lds)"],
 )
 
 cc_library(
@@ -61,6 +62,7 @@ cc_binary(
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext_copy.def",
+    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext_copy.lds)"],
 )
 
 genrule(
