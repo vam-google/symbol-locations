@@ -58,7 +58,7 @@ cc_library(
 
 cc_binary(
     name = "binary_pybind_pyext_copy",
-    deps = [":pybind_pyext_copy_first_00_first_00_second_00"],
+    deps = [":pybind_pyext_copy_first_00_first_00_second_00", ":pybind_pyext_copy.lds"],
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext_copy.def",
