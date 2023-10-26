@@ -12,6 +12,11 @@ test --compilation_mode=opt
 build --enable_platform_specific_config=true
 test --enable_platform_specific_config=true
 
+build --cxxopt=-std=c++17
+test --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+test --host_cxxopt=-std=c++17
+
 build:linux --cxxopt=-std=c++17
 test:linux --cxxopt=-std=c++17
 build:linux --host_cxxopt=-std=c++17
