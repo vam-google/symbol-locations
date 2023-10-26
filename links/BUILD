@@ -357,6 +357,25 @@ cc_test(
     linkstatic = False,
 )
 
+cc_test(
+    name = "raw_test_0__first_10__second_10",
+    srcs = [":links_test.cc", ],
+    deps = [
+        ":first_10__second_10",
+        "@gtest//:gtest_main"
+    ],
+    linkstatic = False,
+)
+
+cc_test(
+    name = "raw_test_0__first_10__second_00",
+    srcs = [":links_test.cc", ],
+    deps = [
+        ":first_10__second_00",
+        "@gtest//:gtest_main"
+    ],
+    linkstatic = False,
+)
 
 #
 # binary linking variants (links first library)
