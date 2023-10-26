@@ -389,6 +389,23 @@ cc_binary(
 )
 
 cc_binary(
+    name = "binary_10__first_00__second_00",
+    srcs = [],
+    deps = [":first_00__second_00"],
+    linkstatic = False,
+    linkshared = False
+)
+
+cc_binary(
+    name = "binary_default_00__first_00__second_00",
+    srcs = [],
+    deps = [":first_00__second_00"],
+#    linkstatic = False,
+#    linkshared = False
+)
+
+
+cc_binary(
     name = "binary_01__first_00__second_01",
     srcs = [],
     deps = [":first_00__second_01"],
