@@ -14,7 +14,7 @@ cc_library(
     hdrs = [":second.h"],
     deps = [],
     linkstatic = False,
-    alwayslink = False,
+    alwayslink = True,
 )
 
 cc_library(
@@ -346,6 +346,17 @@ cc_test(
     ],
     linkstatic = False,
 )
+
+cc_test(
+    name = "raw_test_0__first_11__second_11",
+    srcs = [":links_test.cc", ],
+    deps = [
+        ":first_11__second_11",
+        "@gtest//:gtest_main"
+    ],
+    linkstatic = False,
+)
+
 
 #
 # binary linking variants (links first library)

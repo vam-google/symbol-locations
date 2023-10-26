@@ -41,7 +41,7 @@ cc_binary(
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext.def",
-    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext.lds)"],
+#    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext.lds)"],
 )
 
 cc_library(
@@ -62,7 +62,7 @@ cc_binary(
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext_copy.def",
-    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext_copy.lds)"],
+#    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext_copy.lds)"],
 )
 
 genrule(
