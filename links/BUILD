@@ -14,7 +14,7 @@ cc_library(
     hdrs = [":second.h"],
     deps = [],
     linkstatic = False,
-    alwayslink = True,
+    alwayslink = False,
 )
 
 cc_library(
