@@ -5,7 +5,7 @@ config_setting(
 )
 
 cc_library(
-    name = "pybind_second_00",
+    name = "pybind_second",
     hdrs = ["pybind_second.h"],
     srcs = ["pybind_second.cc"],
     features = ["windows_export_all_symbols"],
@@ -14,21 +14,21 @@ cc_library(
 )
 
 cc_library(
-    name = "pybind_first_00_second_00",
+    name = "pybind_first_second",
     hdrs = ["pybind_first.h"],
     srcs = ["pybind_first.cc"],
-    deps = [":pybind_second_00"],
+    deps = [":pybind_second"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
 
 cc_library(
-    name = "pybind_pyext_first_00_first_00_second_00",
+    name = "pybind_pyext_first_second",
     srcs = ["pybind_pyext.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
-        ":pybind_first_00_second_00",
+        ":pybind_first_second",
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
@@ -37,7 +37,7 @@ cc_library(
 
 cc_binary(
     name = "binary_pybind_pyext",
-    deps = [":pybind_pyext_first_00_first_00_second_00", ":pybind_pyext.lds"],
+    deps = [":pybind_pyext_first_second", ":pybind_pyext.lds"],
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext.def",
@@ -45,11 +45,11 @@ cc_binary(
 )
 
 cc_library(
-    name = "pybind_pyext_copy_first_00_first_00_second_00",
+    name = "pybind_pyext_copy_first_second",
     srcs = ["pybind_pyext_copy.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
-        ":pybind_first_00_second_00",
+        ":pybind_first_second",
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
@@ -58,7 +58,7 @@ cc_library(
 
 cc_binary(
     name = "binary_pybind_pyext_copy",
-    deps = [":pybind_pyext_copy_first_00_first_00_second_00", ":pybind_pyext_copy.lds"],
+    deps = [":pybind_pyext_copy_first_second", ":pybind_pyext_copy.lds"],
     linkstatic = False,
     linkshared = True,
     win_def_file = ":pybind_pyext_copy.def",
