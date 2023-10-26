@@ -1,1 +1,1 @@
-{PyInit_binary_pybind_pyext_copy;};
+PyInit_binary_pybind_pyext_copy
