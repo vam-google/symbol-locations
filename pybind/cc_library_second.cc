@@ -1,4 +1,4 @@
-#include "pybind/pybind_second.h"
+#include "pybind/cc_library_second.h"
 
 static int my_pybind_global = 0;
 

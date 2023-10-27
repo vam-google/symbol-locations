@@ -5,30 +5,52 @@ config_setting(
 )
 
 cc_library(
-    name = "pybind_second",
-    hdrs = ["pybind_second.h"],
-    srcs = ["pybind_second.cc"],
+    name = "cc_library_second",
+    hdrs = ["cc_library_second.h"],
+    srcs = ["cc_library_second.cc"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
 
 cc_library(
-    name = "pybind_first_second",
-    hdrs = ["pybind_first.h"],
-    srcs = ["pybind_first.cc"],
-    deps = [":pybind_second"],
+    name = "cc_library_first",
+    hdrs = ["cc_library_first.h"],
+    srcs = ["cc_library_first.cc"],
+    deps = [":cc_library_second"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
 
 cc_library(
-    name = "pybind_pyext_first_second",
-    srcs = ["pybind_pyext.cc"],
+    name = "cc_library_pybind",
+    srcs = ["pybind.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
-        ":pybind_first_second",
+        ":cc_library_first",
+        "@pybind11//:pybind11"
+    ],
+    linkstatic = False,
+    alwayslink = False,
+#    alwayslink = True,
+)
+
+cc_binary(
+    name = "cc_binary_pybind",
+    deps = [":cc_library_pybind"],
+    linkstatic = False,
+#    linkstatic = True,
+    linkshared = True,
+    win_def_file = ":pybind.def",
+)
+
+cc_library(
+    name = "cc_library_pybind_copy",
+    srcs = ["pybind_copy.cc"],
+    features = ["windows_export_all_symbols"],
+    deps = [
+        ":cc_library_first",
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
@@ -36,82 +58,59 @@ cc_library(
 )
 
 cc_binary(
-    name = "binary_pybind_pyext",
-    deps = [":pybind_pyext_first_second", ":pybind_pyext.lds"],
+    name = "cc_binary_pybind_copy",
+    deps = [":cc_library_pybind_copy"],
     linkstatic = False,
     linkshared = True,
-    win_def_file = ":pybind_pyext.def",
-#    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext.lds)"],
-)
-
-cc_library(
-    name = "pybind_pyext_copy_first_second",
-    srcs = ["pybind_pyext_copy.cc"],
-    features = ["windows_export_all_symbols"],
-    deps = [
-        ":pybind_first_second",
-        "@pybind11//:pybind11"
-    ],
-    linkstatic = False,
-    alwayslink = False,
-)
-
-cc_binary(
-    name = "binary_pybind_pyext_copy",
-    deps = [":pybind_pyext_copy_first_second", ":pybind_pyext_copy.lds"],
-    linkstatic = False,
-    linkshared = True,
-    win_def_file = ":pybind_pyext_copy.def",
-#    linkopts = ["-Wl,-exported_symbols_list,$(location :pybind_pyext_copy.lds)"],
+    win_def_file = ":pybind_copy.def",
 )
 
 genrule(
-    name = "_binary_pybind_pyext_pyd",
-    srcs = [":binary_pybind_pyext"],
-    outs = ["binary_pybind_pyext.pyd"],
+    name = "cc_binary_pybind_pyd",
+    srcs = [":cc_binary_pybind"],
+    outs = ["cc_binary_pybind.pyd"],
     cmd = "cp $< $@;",
 )
 
 genrule(
-    name = "_binary_pybind_pyext_so",
-    srcs = [":binary_pybind_pyext"],
-    outs = ["binary_pybind_pyext.so"],
+    name = "cc_binary_pybind_so",
+    srcs = [":cc_binary_pybind"],
+    outs = ["cc_binary_pybind.so"],
     cmd = "cp $< $@",
 )
 
 genrule(
-    name = "_binary_pybind_pyext_copy_pyd",
-    srcs = [":binary_pybind_pyext_copy"],
-    outs = ["binary_pybind_pyext_copy.pyd"],
+    name = "cc_binary_pybind_copy_pyd",
+    srcs = [":cc_binary_pybind_copy"],
+    outs = ["cc_binary_pybind_copy.pyd"],
     cmd = "cp $< $@;",
 )
 
 genrule(
-    name = "_binary_pybind_pyext_copy_so",
-    srcs = [":binary_pybind_pyext_copy"],
-    outs = ["binary_pybind_pyext_copy.so"],
+    name = "cc_binary_pybind_copy_so",
+    srcs = [":cc_binary_pybind_copy"],
+    outs = ["cc_binary_pybind_copy.so"],
     cmd = "cp $< $@",
 )
 
 py_test(
     name = "pybind_test",
     srcs = ["pybind_test.py"],
-#    data = [":binary_pybind_pyext"],
     data = select({
        "//pybind:windows": [
-           "binary_pybind_pyext.pyd",
-           ":binary_pybind_pyext",
-           "binary_pybind_pyext_copy.pyd",
-           ":binary_pybind_pyext_copy",
+           "cc_binary_pybind.pyd",
+           ":cc_binary_pybind",
+           "cc_binary_pybind_copy.pyd",
+           ":cc_binary_pybind_copy",
 #           ":pybind_pyext_first_00_first_00_second_00",
 #           ":pybind_first_00_second_00",
 #           ":pybind_second_00"
        ],
        "//conditions:default": [
-           "binary_pybind_pyext.so",
-           "binary_pybind_pyext",
-           "binary_pybind_pyext_copy.so",
-           "binary_pybind_pyext_copy",
+           "cc_binary_pybind.so",
+           "cc_binary_pybind",
+           "cc_binary_pybind_copy.so",
+           "cc_binary_pybind_copy",
        ],
     }),
 )

@@ -1,0 +1,4 @@
+LIBRARY cc_binary_pybind_copy.dll
+EXPORTS
+	PyInit_cc_binary_pybind_copy
+
