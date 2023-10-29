@@ -25,7 +25,7 @@ cc_library(
 
 cc_library(
     name = "cc_library_pybind",
-    srcs = ["pybind.cc"],
+    srcs = ["cc_library_pybind.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
         ":cc_library_first",
@@ -42,12 +42,12 @@ cc_binary(
     linkstatic = False,
 #    linkstatic = True,
     linkshared = True,
-    win_def_file = ":pybind.def",
+    win_def_file = ":cc_binary_pybind.def",
 )
 
 cc_library(
     name = "cc_library_pybind_copy",
-    srcs = ["pybind_copy.cc"],
+    srcs = ["cc_library_pybind_copy.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
         ":cc_library_first",
@@ -62,7 +62,7 @@ cc_binary(
     deps = [":cc_library_pybind_copy"],
     linkstatic = False,
     linkshared = True,
-    win_def_file = ":pybind_copy.def",
+    win_def_file = ":cc_binary_pybind_copy.def",
 )
 
 genrule(
@@ -94,8 +94,8 @@ genrule(
 )
 
 py_test(
-    name = "pybind_test",
-    srcs = ["pybind_test.py"],
+    name = "py_test_pybind_test",
+    srcs = ["py_test_pybind_test.py"],
     data = select({
        "//pybind:windows": [
            "cc_binary_pybind.pyd",
