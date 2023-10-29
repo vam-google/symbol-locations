@@ -1,3 +1,5 @@
+load("//pybind:pywrap.bzl", "pywrap_library", "pywrap_common_library")
+
 config_setting(
     name = "windows",
     values = {"cpu": "x64_windows"},
@@ -32,17 +34,8 @@ cc_library(
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-    alwayslink = False,
-#    alwayslink = True,
-)
-
-cc_binary(
-    name = "cc_binary_pybind",
-    deps = [":cc_library_pybind"],
-    linkstatic = False,
-#    linkstatic = True,
-    linkshared = True,
-    win_def_file = ":cc_binary_pybind.def",
+#    alwayslink = False,
+    alwayslink = True,
 )
 
 cc_library(
@@ -54,16 +47,49 @@ cc_library(
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-    alwayslink = False,
+#    alwayslink = False,
+    alwayslink = True,
+)
+
+pywrap_library(
+    name = "pywrap",
+    deps = [":cc_library_pybind"],
+)
+
+pywrap_library(
+    name = "pywrap_copy",
+    deps = ["cc_library_pybind_copy"],
+)
+
+pywrap_common_library(
+    name = "pywrap_common",
+    deps = [":cc_library_pybind", ":cc_library_pybind_copy"],
+)
+
+cc_binary(
+    name = "cc_binary_pywrap_common",
+    deps = [":pywrap_common"],
+    linkstatic = True,
+    linkshared = True,
+#    win_def_file = ":cc_binary_pybind.def",
+)
+
+cc_binary(
+    name = "cc_binary_pybind",
+    srcs = [":cc_binary_pywrap_common"],
+    deps = [":pywrap"],
+    linkstatic = True,
+    linkshared = True,
 )
 
 cc_binary(
     name = "cc_binary_pybind_copy",
-    deps = [":cc_library_pybind_copy"],
-    linkstatic = False,
+    srcs = [":cc_binary_pywrap_common"],
+    deps = [":pywrap_copy"],
+    linkstatic = True,
     linkshared = True,
-    win_def_file = ":cc_binary_pybind_copy.def",
 )
+
 
 genrule(
     name = "cc_binary_pybind_pyd",
@@ -102,9 +128,6 @@ py_test(
            ":cc_binary_pybind",
            "cc_binary_pybind_copy.pyd",
            ":cc_binary_pybind_copy",
-#           ":pybind_pyext_first_00_first_00_second_00",
-#           ":pybind_first_00_second_00",
-#           ":pybind_second_00"
        ],
        "//conditions:default": [
            "cc_binary_pybind.so",
@@ -114,3 +137,13 @@ py_test(
        ],
     }),
 )
+
+
+
+
+
+
+
+
+
+
