@@ -1,6 +1,6 @@
 import unittest
-from pybind import cc_binary_pybind as lib_so
-from pybind import cc_binary_pybind_copy as lib_so_copy
+from pybind import pybind_cc_binary as lib_so
+from pybind import pybind_copy_cc_binary as lib_so_copy
 
 class PymoduleTest(unittest.TestCase):
   def test_pybind_first(self):

@@ -7,147 +7,167 @@ config_setting(
 )
 
 cc_library(
-    name = "cc_library_second",
-    hdrs = ["cc_library_second.h"],
-    srcs = ["cc_library_second.cc"],
+    name = "second_library",
+    hdrs = ["second_library.h"],
+    srcs = ["second_library.cc"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
 
 cc_library(
-    name = "cc_library_first",
-    hdrs = ["cc_library_first.h"],
-    srcs = ["cc_library_first.cc"],
-    deps = [":cc_library_second"],
+    name = "first_library",
+    hdrs = ["first_library.h"],
+    srcs = ["first_library.cc"],
+    deps = [":second_library"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
 
 cc_library(
-    name = "cc_library_pybind",
-    srcs = ["cc_library_pybind.cc"],
+    name = "pybind",
+    srcs = ["pybind.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
-        ":cc_library_first",
+        ":first_library",
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-    alwayslink = True,
+    alwayslink = True,  # MUST be True
 )
 
 cc_library(
-    name = "cc_library_pybind_copy",
-    srcs = ["cc_library_pybind_copy.cc"],
+    name = "pybind_copy",
+    srcs = ["pybind_copy.cc"],
     features = ["windows_export_all_symbols"],
     deps = [
-        ":cc_library_first",
+        ":first_library",
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-    alwayslink = True,
+    alwayslink = True, # MUST be True
 )
 
-pywrap_library(
-    name = "pywrap",
-    deps = [":cc_library_pybind"],
-)
-
-pywrap_library(
-    name = "pywrap_copy",
-    deps = ["cc_library_pybind_copy"],
-)
-
+#
+# pywrap common library
+#
 pywrap_common_library(
-    name = "pywrap_common",
-    deps = [":cc_library_pybind", ":cc_library_pybind_copy"],
+    name = "pybind_and_pybind_copy_pywrap_common",
+    deps = [":pybind", ":pybind_copy"],
 )
 
 cc_binary(
-    name = "cc_binary_pywrap_common",
-    deps = [":pywrap_common"],
+    name = "pybind_and_pybind_copy_pywrap_common_cc_binary",
+    deps = [":pybind_and_pybind_copy_pywrap_common"],
     linkstatic = True,
     linkshared = True,
     features = ["windows_export_all_symbols"],
-    win_def_file = ":cc_binary_pywrap_common.def",
+    win_def_file = ":pybind_and_pybind_copy_pywrap_common_cc_binary.def",
 )
 
 filegroup(
-    name = "cc_binary_pywrap_common_if_lib",
-    srcs = [":cc_binary_pywrap_common"],
+    name = "pybind_and_pybind_copy_pywrap_common_if_lib",
+    srcs = [":pybind_and_pybind_copy_pywrap_common_cc_binary"],
     output_group = "interface_library",
 )
 
 cc_import(
-    name = "cc_import_pywrap_common",
-    interface_library = "cc_binary_pywrap_common_if_lib",
-    shared_library = ":cc_binary_pywrap_common",
+    name = "pybind_and_pybind_copy_pywrap_common_import",
+    interface_library = "pybind_and_pybind_copy_pywrap_common_if_lib",
+    shared_library = ":pybind_and_pybind_copy_pywrap_common_cc_binary",
 )
 
+#
+# individual pywrap libraries
+#
 
-cc_binary(
-    name = "cc_binary_pybind",
-    srcs = [],
-    deps = [":pywrap", "@pybind11//:pybind11", ":cc_import_pywrap_common"],
-    linkstatic = True,
-    linkshared = True,
-    win_def_file = ":cc_binary_pybind.def",
+# first lib
+pywrap_library(
+    name = "pybind_pywrap",
+    deps = [":pybind"],
 )
 
 cc_binary(
-    name = "cc_binary_pybind_copy",
+    name = "pybind_cc_binary",
     srcs = [],
-    deps = [":pywrap_copy", "@pybind11//:pybind11", ":cc_import_pywrap_common"],
+    deps = [
+        ":pybind_pywrap",
+        "@pybind11//:pybind11",
+        ":pybind_and_pybind_copy_pywrap_common_import"
+    ],
     linkstatic = True,
     linkshared = True,
-    win_def_file = ":cc_binary_pybind_copy.def",
+    win_def_file = ":pybind_cc_binary.def",
 )
 
 
 genrule(
-    name = "cc_binary_pybind_pyd",
-    srcs = [":cc_binary_pybind"],
-    outs = ["cc_binary_pybind.pyd"],
+    name = "pybind_cc_binary_pyd",
+    srcs = [":pybind_cc_binary"],
+    outs = ["pybind_cc_binary.pyd"],
     cmd = "cp $< $@;",
 )
 
 genrule(
-    name = "cc_binary_pybind_so",
-    srcs = [":cc_binary_pybind"],
-    outs = ["cc_binary_pybind.so"],
+    name = "pybind_cc_binary_so",
+    srcs = [":pybind_cc_binary"],
+    outs = ["pybind_cc_binary.so"],
     cmd = "cp $< $@",
 )
 
+# second library
+pywrap_library(
+    name = "pybind_copy_pywrap",
+    deps = ["pybind_copy"],
+)
+
+cc_binary(
+    name = "pybind_copy_cc_binary",
+    srcs = [],
+    deps = [
+        ":pybind_copy_pywrap",
+        "@pybind11//:pybind11",
+        ":pybind_and_pybind_copy_pywrap_common_import"
+    ],
+    linkstatic = True,
+    linkshared = True,
+    win_def_file = ":pybind_copy_cc_binary.def",
+)
+
 genrule(
-    name = "cc_binary_pybind_copy_pyd",
-    srcs = [":cc_binary_pybind_copy"],
-    outs = ["cc_binary_pybind_copy.pyd"],
+    name = "pybind_copy_cc_binary_pyd",
+    srcs = [":pybind_copy_cc_binary"],
+    outs = ["pybind_copy_cc_binary.pyd"],
     cmd = "cp $< $@;",
 )
 
 genrule(
     name = "cc_binary_pybind_copy_so",
-    srcs = [":cc_binary_pybind_copy"],
-    outs = ["cc_binary_pybind_copy.so"],
+    srcs = [":pybind_copy_cc_binary"],
+    outs = ["pybind_copy_cc_binary.so"],
     cmd = "cp $< $@",
 )
 
+
+#
+# Test
+#
 py_test(
-    name = "py_test_pybind_test",
-    srcs = ["py_test_pybind_test.py"],
+    name = "pybind_py_test",
+    srcs = ["pybind_py_test.py"],
     data = select({
        "//pybind:windows": [
-           "cc_binary_pybind.pyd",
-           ":cc_binary_pybind",
-           "cc_binary_pybind_copy.pyd",
-           ":cc_binary_pybind_copy",
+           "pybind_cc_binary.pyd",
+           ":pybind_cc_binary",
+           "pybind_copy_cc_binary.pyd",
+           ":pybind_copy_cc_binary",
        ],
        "//conditions:default": [
-           "cc_binary_pybind.so",
-           "cc_binary_pybind",
-           "cc_binary_pybind_copy.so",
-           "cc_binary_pybind_copy",
+           "pybind_cc_binary.so",
+           "pybind_cc_binary",
+           "pybind_copy_cc_binary.so",
+           "pybind_copy_cc_binary",
        ],
     }),
 )

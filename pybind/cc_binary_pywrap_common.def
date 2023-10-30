@@ -1,5 +1,0 @@
-LIBRARY cc_binary_pywrap_common.dll
-EXPORTS
-	?pybind_second@@YAHH@Z
-	?pybind_first@@YAHH@Z
-
