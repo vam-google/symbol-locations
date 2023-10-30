@@ -693,6 +693,13 @@ cc_binary(
     linkshared = True
 )
 
+#cc_binary(
+#    name = "used_binary_11__first_00__second_11",
+#    srcs = ["links_shared.cc"],
+#    deps = [":first_00__second_11"],
+#    linkstatic = True,
+#    linkshared = True
+#)
 
 #
 # both first binary and second binary as cc_binary

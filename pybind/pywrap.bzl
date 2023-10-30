@@ -32,6 +32,13 @@ pywrap_library = rule(
 
 def _pywrap_common_library_impl(ctx):
     deps = ctx.attr.deps
+    cc_toolchain = find_cpp_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
 
     dependency_libraries = []
     for dep in ctx.attr.deps:
@@ -39,10 +46,13 @@ def _pywrap_common_library_impl(ctx):
             for lib in d.libraries:
                 lib_copy = cc_common.create_library_to_link(
                     actions = ctx.actions,
-#                    feature_configuration = lib.feature_configuration,
+                    cc_toolchain = cc_toolchain,
+                    feature_configuration = feature_configuration,
                     static_library = lib.static_library,
                     pic_static_library = lib.pic_static_library,
 #                    dynamic_library = lib.dynamic_library,
+#                    dynamic_library_symlink_path = "",
+#                    interface_library_symlink_path = "",
                     interface_library = lib.interface_library,
                     alwayslink = True,
                 )
@@ -66,6 +76,11 @@ pywrap_common_library = rule(
             allow_files = True,
             providers = [CcInfo],
         ),
+        "_cc_toolchain": attr.label(
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain"
+        ),
     },
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
     implementation = _pywrap_common_library_impl,
 )

@@ -34,7 +34,6 @@ cc_library(
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-#    alwayslink = False,
     alwayslink = True,
 )
 
@@ -47,7 +46,6 @@ cc_library(
         "@pybind11//:pybind11"
     ],
     linkstatic = False,
-#    alwayslink = False,
     alwayslink = True,
 )
 
@@ -71,23 +69,39 @@ cc_binary(
     deps = [":pywrap_common"],
     linkstatic = True,
     linkshared = True,
-#    win_def_file = ":cc_binary_pybind.def",
+    features = ["windows_export_all_symbols"],
+    win_def_file = ":cc_binary_pywrap_common.def",
 )
+
+filegroup(
+    name = "cc_binary_pywrap_common_if_lib",
+    srcs = [":cc_binary_pywrap_common"],
+    output_group = "interface_library",
+)
+
+cc_import(
+    name = "cc_import_pywrap_common",
+    interface_library = "cc_binary_pywrap_common_if_lib",
+    shared_library = ":cc_binary_pywrap_common",
+)
+
 
 cc_binary(
     name = "cc_binary_pybind",
-    srcs = [":cc_binary_pywrap_common"],
-    deps = [":pywrap"],
+    srcs = [],
+    deps = [":pywrap", "@pybind11//:pybind11", ":cc_import_pywrap_common"],
     linkstatic = True,
     linkshared = True,
+    win_def_file = ":cc_binary_pybind.def",
 )
 
 cc_binary(
     name = "cc_binary_pybind_copy",
-    srcs = [":cc_binary_pywrap_common"],
-    deps = [":pywrap_copy"],
+    srcs = [],
+    deps = [":pywrap_copy", "@pybind11//:pybind11", ":cc_import_pywrap_common"],
     linkstatic = True,
     linkshared = True,
+    win_def_file = ":cc_binary_pybind_copy.def",
 )
 
 
@@ -137,8 +151,6 @@ py_test(
        ],
     }),
 )
-
-
 
 
 
