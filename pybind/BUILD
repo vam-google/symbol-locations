@@ -1,11 +1,8 @@
 load("//pybind:pywrap.bzl", "pywrap_library", "pywrap_common_library")
 
-config_setting(
-    name = "windows",
-    values = {"cpu": "x64_windows"},
-    visibility = ["//visibility:public"],
-)
-
+#
+# Logic shared between python and regular C++ binaries/test
+#
 cc_library(
     name = "second_library",
     hdrs = ["second_library.h"],
@@ -25,6 +22,44 @@ cc_library(
     alwayslink = False,
 )
 
+
+#
+# Regular C++ binaries/tests
+#
+cc_library(
+    name = "regular",
+    hdrs = ["regular.h"],
+    srcs = ["regular.cc"],
+    deps = [":first_library"],
+    linkstatic = True,
+    alwayslink = True,
+)
+
+cc_library(
+    name = "regular_copy",
+    hdrs = ["regular_copy.h"],
+    srcs = ["regular_copy.cc"],
+    deps = [":first_library"],
+    linkstatic = False,
+    alwayslink = False,
+)
+
+# Nodes in transitive closure of this binary:
+# bazel query "deps(//pybind:regular_cc_test)" --output label_kind | grep "rule //"
+cc_test(
+    name = "regular_cc_test",
+    srcs = ["regular_test.cc"],
+    deps = [
+        ":regular",
+        ":regular_copy",
+        "@gtest//:gtest_main"
+    ],
+    #linkstatic = by default will be "True" on windows else "False"
+)
+
+#
+# Python-specific (pybind) binaries/tests
+#
 cc_library(
     name = "pybind",
     srcs = ["pybind.cc"],
@@ -82,7 +117,7 @@ cc_import(
 # individual pywrap libraries
 #
 
-# first lib
+# first library
 pywrap_library(
     name = "pybind_pywrap",
     deps = [":pybind"],
@@ -157,7 +192,7 @@ py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
     data = select({
-       "//pybind:windows": [
+       "//:windows": [
            "pybind_cc_binary.pyd",
            ":pybind_cc_binary",
            "pybind_copy_cc_binary.pyd",

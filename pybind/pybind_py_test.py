@@ -1,17 +1,17 @@
 import unittest
-from pybind import pybind_cc_binary as lib_so
-from pybind import pybind_copy_cc_binary as lib_so_copy
+from pybind import pybind_cc_binary as regular
+from pybind import pybind_copy_cc_binary as regular_copy
 
-class PymoduleTest(unittest.TestCase):
+class PybindTest(unittest.TestCase):
   def test_pybind_first(self):
-    print("1: test_pybind_first")
-    self.assertEqual(lib_so.pybind_first(1), 2)
-    print("2: test_pybind_second")
-    self.assertEqual(lib_so.pybind_second(1), 2)
-    print("3: test_pybind_first_copy")
-    self.assertEqual(lib_so_copy.pybind_first(1), 4)
-    print("4: test_pybind_second_copy")
-    self.assertEqual(lib_so_copy.pybind_second(1), 4)
+    print("1: regular.first_func")
+    self.assertEqual(regular.first_func(1), 2)
+    print("2: regular.second_func")
+    self.assertEqual(regular.second_func(1), 2)
+    print("3: regular_copy.first_func")
+    self.assertEqual(regular_copy.first_func(1), 4)
+    print("4: regular_copy.second_func")
+    self.assertEqual(regular_copy.second_func(1), 4)
 
 if __name__ == '__main__':
   unittest.main()
