@@ -31,6 +31,7 @@ cc_library(
     hdrs = ["regular.h"],
     srcs = ["regular.cc"],
     deps = [":first_library"],
+    features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = True,
 )
@@ -40,6 +41,7 @@ cc_library(
     hdrs = ["regular_copy.h"],
     srcs = ["regular_copy.cc"],
     deps = [":first_library"],
+    features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
 )
@@ -54,7 +56,8 @@ cc_test(
         ":regular_copy",
         "@gtest//:gtest_main"
     ],
-    #linkstatic = by default will be "True" on windows else "False"
+#    linkstatic = by default will be "True" on windows else "False"
+    linkstatic = False,
 )
 
 #
