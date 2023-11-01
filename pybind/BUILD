@@ -57,7 +57,7 @@ cc_test(
         "@gtest//:gtest_main"
     ],
 #    linkstatic = by default will be "True" on windows else "False"
-    linkstatic = False,
+#    linkstatic = False,
 )
 
 #
