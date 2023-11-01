@@ -58,3 +58,20 @@ python_configure(
     name = "local_config_python",
     python_interpreter_target = interpreter,
 )
+
+
+# We do not need these and do not use them, but without them bazel query fails
+# because some of bazel_skylib rules depend on them on analysis phase
+http_archive(
+    name = "com_google_absl",
+    sha256 = "8eeec9382fc0338ef5c60053f3a4b0e0708361375fe51c9e65d0ce46ccfe55a7",
+    strip_prefix = "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/b971ac5250ea8de900eae9f95e06548d14cd95fe.tar.gz"],
+)
+
+http_archive(
+    name = "com_googlesource_code_re2",
+    sha256 = "ef516fb84824a597c4d5d0d6d330daedb18363b5a99eda87d027e6bdd9cba299",
+    strip_prefix = "re2-03da4fc0857c285e3a26782f6bc8931c4c950df4",
+    urls = ["https://github.com/google/re2/archive/03da4fc0857c285e3a26782f6bc8931c4c950df4.tar.gz"],
+)

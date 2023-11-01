@@ -12,6 +12,9 @@ test --compilation_mode=opt
 build --enable_platform_specific_config=true
 test --enable_platform_specific_config=true
 
+test --cache_test_results=no
+test --test_output=all
+
 build:macos --cxxopt=-std=c++17
 test:macos --cxxopt=-std=c++17
 build:macos --host_cxxopt=-std=c++17
