@@ -96,13 +96,16 @@ pywrap_extension(
     deps = {
         "//pybind:pybind": [
             "pybind_cc_binary",
+            # Should be generated in final version
             ":pybind_cc_binary.def"
         ],
         "//pybind:pybind_copy": [
             "pybind_copy_cc_binary",
+            # Should be generated in final version
             ":pybind_copy_cc_binary.def"
         ],
     },
+    # Should be generated in final version
     common_win_def_file = ":pybind_and_pybind_copy_pywrap_common_cc_binary.def",
 )
 
