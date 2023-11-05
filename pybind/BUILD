@@ -8,7 +8,7 @@ cc_library(
     hdrs = ["second_library.h"],
     srcs = ["second_library.cc"],
     features = ["windows_export_all_symbols"],
-    linkstatic = True,
+    linkstatic = False,
     alwayslink = False,
 )
 
@@ -63,7 +63,7 @@ cc_test(
         "@gtest//:gtest_main"
     ],
 #    linkstatic = by default will be "True" on windows else "False"
-    linkstatic = False,
+#    linkstatic = False,
 )
 
 #
