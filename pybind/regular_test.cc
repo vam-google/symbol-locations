@@ -2,7 +2,6 @@
 #include "gtest/gtest.h"
 #include "regular.h"
 #include "regular_copy.h"
-#include "second_library.h"
 
 
 TEST(RegularTest, RegularTest) {
