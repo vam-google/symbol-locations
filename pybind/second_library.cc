@@ -6,5 +6,5 @@
 static int my_pybind_global = 0;
 
 int second_func(int x) {
-  return x + my_pybind_global++;;
+  return x + my_pybind_global++;
 }
