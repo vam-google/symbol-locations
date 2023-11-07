@@ -60,9 +60,9 @@ def pywrap_extension(
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
-    outputs_filegroup_win = [":%s" % pywrap_common_cc_binary_name]
-    outputs_filegroup = [":%s" % pywrap_common_cc_binary_name]
-    outputs_data = []
+    outs_win = [":%s" % pywrap_common_cc_binary_name]
+    outs = [":%s" % pywrap_common_cc_binary_name]
+    outs_data = []
 
     for orig_label, lib_props in normalized_deps.items():
         pybind_lib_name = lib_props[0]
@@ -104,22 +104,33 @@ def pywrap_extension(
             outs = [pybind_dyn_lib_file_name],
             cmd = "cp $< $@;",
         )
-        outputs_data.append(":%s" % pybind_lib_name)
-        outputs_filegroup_win.append(":%s" % pybind_dyn_lib_file_name_win)
-        outputs_filegroup.append(":%s" % pybind_dyn_lib_file_name)
+        outs_data.append(":%s" % pybind_lib_name)
+        outs_win.append(":%s" % pybind_dyn_lib_file_name_win)
+        outs.append(":%s" % pybind_dyn_lib_file_name)
 
     # 3) The output of this macro is a single filegroup, which has the single
     # common library and all thin individual wrappers (with proper
     # platform-specific file extensions) together. Ready to be added as a simple
     # "data" entry in any py_test or py_binary target down the stream.
     #
-    native.filegroup(
+    # Flie group is still kind of nice that it shows the actual files which
+    # were built.
+    # native.filegroup(
+    #     name = name,
+    #     srcs = select({
+    #         "@bazel_tools//src/conditions:windows": outs_win,
+    #         "//conditions:default": outs
+    #     }),
+    #     data = outs_data,
+    # )
+
+    native.py_library(
         name = name,
-        srcs = select({
-            "@bazel_tools//src/conditions:windows": outputs_filegroup_win,
-            "//conditions:default": outputs_filegroup
+        srcs = [],
+        data = select({
+            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
+            "//conditions:default": outs + outs_data
         }),
-        data = outputs_data,
     )
 
 

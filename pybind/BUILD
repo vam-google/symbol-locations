@@ -112,7 +112,7 @@ pywrap_extension(
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
-    data = [":pybind_py_test_extension"],
+    deps = [":pybind_py_test_extension"],
 )
 
 
@@ -224,22 +224,31 @@ py_test(
 #py_test(
 #    name = "pybind_py_test",
 #    srcs = ["pybind_py_test.py"],
-#    data = select({
-#       "//:windows": [
-#           "pybind_cc_binary.pyd",
-#           ":pybind_cc_binary",
-#           "pybind_copy_cc_binary.pyd",
-#           ":pybind_copy_cc_binary",
-#       ],
-#       "//conditions:default": [
-#           "pybind_cc_binary.so",
-#           "pybind_cc_binary",
-#           "pybind_copy_cc_binary.so",
-#           "pybind_copy_cc_binary",
-#       ],
-#    }),
+#    deps = [":stub_library"]
+##    data = select({
+##       "//:windows": [
+##           "pybind_cc_binary.pyd",
+##           ":pybind_cc_binary",
+##           "pybind_copy_cc_binary.pyd",
+##           ":pybind_copy_cc_binary",
+##       ],
+##       "//conditions:default": [
+##           "pybind_cc_binary.so",
+##           "pybind_cc_binary",
+##           "pybind_copy_cc_binary.so",
+##           "pybind_copy_cc_binary",
+##       ],
+##    }),
 #)
-
-
+#
+#py_library(
+#    name = "stub_library",
+#    data = [
+#       "pybind_cc_binary.so",
+#       "pybind_cc_binary",
+#       "pybind_copy_cc_binary.so",
+#       "pybind_copy_cc_binary",
+#    ]
+#)
 
 
