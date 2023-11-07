@@ -94,12 +94,12 @@ cc_library(
 pywrap_extension(
     name = "pybind_py_test_extension",
     deps = {
-        "//pybind:pybind": [
+        ":pybind": [
             "pybind_cc_binary",
             # Should be generated in final version
             ":pybind_cc_binary.def"
         ],
-        "//pybind:pybind_copy": [
+        ":pybind_copy": [
             "pybind_copy_cc_binary",
             # Should be generated in final version
             ":pybind_copy_cc_binary.def"
