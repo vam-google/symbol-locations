@@ -5,7 +5,12 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 def pywrap_extension(
         name,
         deps,
-        win_def_file):
+        win_def_file,
+        # For demonstration purposes only.
+        # For real work we always want:
+        #   generate_common_lib = True
+        # as it is the whole point of pywrap_extension
+        generate_common_lib = True):
 
     # 1) Create common pywrap library. The common library should link in
     # everything except the object file with Python Extension's init function
@@ -51,29 +56,36 @@ def pywrap_extension(
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
-    outs_win = [":%s" % pywrap_common_cc_binary_name]
-    outs = [":%s" % pywrap_common_cc_binary_name]
+    if generate_common_lib:
+        outs_win = [":%s" % pywrap_common_cc_binary_name]
+        outs = [":%s" % pywrap_common_cc_binary_name]
+    else:
+        outs_win = []
+        outs = []
     outs_data = []
 
     for dep in deps:
         dep_name = Label(dep).name
         pybind_lib_name = "_%s_shared_object" % dep_name
         pybind_lib_win_def_file = "_%s_win_def" % dep_name
-        pywrap_lib_name = "_%s_pywrap" % pybind_lib_name
 
-        pywrap_split_library(
-            name = pywrap_lib_name,
-            deps = [dep],
-            keep_deps = False,
-        )
+        common_deps = ["@pybind11//:pybind11"] # why do we need it?
+        if generate_common_lib:
+            pywrap_lib_name = "_%s_pywrap" % pybind_lib_name
+            pywrap_split_library(
+                name = pywrap_lib_name,
+                deps = [dep],
+                keep_deps = False,
+            )
+            outs_data.append(":%s" % pybind_lib_name)
+            common_deps.append(":%s" % pywrap_common_import_name)
+        else:
+            pywrap_lib_name = dep_name
+
         native.cc_binary(
             name = pybind_lib_name,
             srcs = [],
-            deps = [
-                ":%s" % pywrap_lib_name,
-                ":%s" % pywrap_common_import_name,
-                "@pybind11//:pybind11", # why do we need it?
-            ],
+            deps = [":%s" % pywrap_lib_name] + common_deps,
             linkstatic = True,
             linkshared = True,
             win_def_file = pybind_lib_win_def_file,
@@ -95,7 +107,6 @@ def pywrap_extension(
             outs = [pybind_dyn_lib_file_name],
             cmd = "cp $< $@;",
         )
-        outs_data.append(":%s" % pybind_lib_name)
         outs_win.append(":%s" % pybind_dyn_lib_file_name_win)
         outs.append(":%s" % pybind_dyn_lib_file_name)
 
@@ -104,16 +115,15 @@ def pywrap_extension(
     # platform-specific file extensions) together. Ready to be added as a simple
     # "data" entry in any py_test or py_binary target down the stream.
     #
-    # Flie group is still kind of nice that it shows the actual files which
-    # were built.
-#    native.filegroup(
-#        name = name + "_filegroup",
-#        srcs = select({
-#            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
-#            "//conditions:default": outs + outs_data
-#        }),
-#        data = outs_data,
-#    )
+    # The filegroup is for debugging purposes (never used for anything real)
+    native.filegroup(
+        name = "_%s_filegroup" % name,
+        srcs = select({
+            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
+            "//conditions:default": outs + outs_data
+        }),
+        data = outs_data,
+    )
 
     native.py_library(
         name = name,

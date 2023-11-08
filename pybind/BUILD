@@ -94,6 +94,7 @@ pywrap_extension(
     ],
     # Should be generated in final version
     win_def_file = ":pybind_py_test_extension.def",
+#    generate_common_lib = False,
 )
 
 py_test(
