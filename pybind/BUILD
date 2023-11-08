@@ -5,8 +5,8 @@ load("//:pywrap.bzl", "pybind_extension", "pywrap_extension", "pywrap_split_libr
 #
 cc_library(
     name = "second_library",
-    hdrs = ["second_library.h"],
     srcs = ["second_library.cc"],
+    hdrs = ["second_library.h"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
     alwayslink = False,
@@ -14,41 +14,40 @@ cc_library(
 
 cc_library(
     name = "first_library",
-    hdrs = ["first_library.h"],
     srcs = ["first_library.cc"],
-    deps = [":second_library"],
+    hdrs = ["first_library.h"],
     features = ["windows_export_all_symbols"],
     linkstatic = False,
+    deps = [":second_library"],
     alwayslink = False,
 )
-
 
 #
 # Regular C++ binaries/tests
 #
 cc_library(
     name = "regular",
-    hdrs = ["regular.h"],
     srcs = ["regular.cc"],
+    hdrs = ["regular.h"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
     deps = [
         ":first_library",
         ":second_library",
     ],
-    features = ["windows_export_all_symbols"],
-    linkstatic = True,
     alwayslink = True,
 )
 
 cc_library(
     name = "regular_copy",
-    hdrs = ["regular_copy.h"],
     srcs = ["regular_copy.cc"],
+    hdrs = ["regular_copy.h"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = False,
     deps = [
         ":first_library",
         ":second_library",
     ],
-    features = ["windows_export_all_symbols"],
-    linkstatic = False,
     alwayslink = False,
 )
 
@@ -59,10 +58,10 @@ cc_test(
     deps = [
         ":regular",
         ":regular_copy",
-        "@gtest//:gtest_main"
+        "@gtest//:gtest_main",
     ],
-#    linkstatic = by default will be "True" on windows else "False"
-#    linkstatic = False,
+    #    linkstatic = by default will be "True" on windows else "False"
+    #    linkstatic = False,
 )
 
 #
@@ -88,13 +87,13 @@ pybind_extension(
 
 pywrap_extension(
     name = "pybind_py_test_extension",
-    deps = [
-        ":pybind_cc_binary",
-        ":pybind_copy_cc_binary"
-    ],
     # Should be generated in final version
     win_def_file = ":pybind_py_test_extension.def",
-#    generate_common_lib = False,
+    deps = [
+        ":pybind_cc_binary",
+        ":pybind_copy_cc_binary",
+    ],
+    #    generate_common_lib = False,
 )
 
 py_test(
@@ -102,5 +101,3 @@ py_test(
     srcs = ["pybind_py_test.py"],
     deps = [":pybind_py_test_extension"],
 )
-
-

@@ -1,6 +1,5 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
-
 # TODO: we need to generate win_def_file, but it should be simple
 def pywrap_extension(
         name,
@@ -11,7 +10,6 @@ def pywrap_extension(
         #   generate_common_lib = True
         # as it is the whole point of pywrap_extension
         generate_common_lib = True):
-
     # 1) Create common pywrap library. The common library should link in
     # everything except the object file with Python Extension's init function
     # PyInit_<extension_name>.
@@ -69,7 +67,7 @@ def pywrap_extension(
         pybind_lib_name = "_%s_shared_object" % dep_name
         pybind_lib_win_def_file = "_%s_win_def" % dep_name
 
-        common_deps = ["@pybind11//:pybind11"] # why do we need it?
+        common_deps = ["@pybind11//:pybind11"]  # why do we need it?
         if generate_common_lib:
             pywrap_lib_name = "_%s_pywrap" % pybind_lib_name
             pywrap_split_library(
@@ -120,7 +118,7 @@ def pywrap_extension(
         name = "_%s_filegroup" % name,
         srcs = select({
             "@bazel_tools//src/conditions:windows": outs_win + outs_data,
-            "//conditions:default": outs + outs_data
+            "//conditions:default": outs + outs_data,
         }),
         data = outs_data,
     )
@@ -130,7 +128,7 @@ def pywrap_extension(
         srcs = [],
         data = select({
             "@bazel_tools//src/conditions:windows": outs_win + outs_data,
-            "//conditions:default": outs + outs_data
+            "//conditions:default": outs + outs_data,
         }),
     )
 
@@ -140,7 +138,6 @@ def pybind_extension(
         deps,
         win_def_file = None,
         **kwargs):
-
     win_def_file_name = "_%s_win_def" % name
     native.cc_library(
         name = name,
@@ -164,7 +161,6 @@ def pybind_extension(
             actual = ":%s" % win_def_file,
         )
 
-
 def _pywrap_split_library_impl(ctx):
     deps = ctx.attr.deps
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -177,7 +173,6 @@ def _pywrap_split_library_impl(ctx):
 
     keep_deps = ctx.attr.keep_deps
     dependency_libraries = []
-
 
     for dep in ctx.attr.deps:
         # TODO: we should not rely on order of object files in CcInfo
@@ -204,14 +199,13 @@ def _pywrap_split_library_impl(ctx):
             if not keep_deps:
                 break
 
-
     linker_input = cc_common.create_linker_input(
         owner = ctx.label,
         libraries = depset(direct = dependency_libraries),
     )
 
     linking_context = cc_common.create_linking_context(
-        linker_inputs = depset(direct = [linker_input])
+        linker_inputs = depset(direct = [linker_input]),
     )
 
     return [CcInfo(linking_context = linking_context)]
@@ -223,9 +217,9 @@ pywrap_split_library = rule(
             providers = [CcInfo],
         ),
         "_cc_toolchain": attr.label(
-            default = "@bazel_tools//tools/cpp:current_cc_toolchain"
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
-        "keep_deps": attr.bool()
+        "keep_deps": attr.bool(),
     },
     fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
