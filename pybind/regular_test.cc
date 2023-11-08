@@ -1,7 +1,9 @@
-#include <iostream>
-#include "gtest/gtest.h"
 #include "regular.h"
+
+#include <iostream>
+
 #include "regular_copy.h"
+#include "gtest/gtest.h"
 
 
 TEST(RegularTest, RegularTest) {
