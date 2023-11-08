@@ -1,4 +1,4 @@
-load("//:pywrap.bzl", "pybind_extension", "pywrap_extension", "pywrap_split_library")
+load("//:pywrap.bzl", "pybind_extension", "pywrap_library", "pywrap_split_library")
 
 #
 # Logic shared between python and regular C++ binaries/test
@@ -85,7 +85,7 @@ pybind_extension(
     ],
 )
 
-pywrap_extension(
+pywrap_library(
     name = "pybind_py_test_extension",
     # Should be generated in final version
     win_def_file = ":pybind_py_test_extension.def",

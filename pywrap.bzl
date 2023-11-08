@@ -1,7 +1,7 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
 # TODO: we need to generate win_def_file, but it should be simple
-def pywrap_extension(
+def pywrap_library(
         name,
         deps,
         win_def_file,
