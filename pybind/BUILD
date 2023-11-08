@@ -53,7 +53,6 @@ cc_library(
 )
 
 # Nodes in transitive closure of this binary:
-# bazel query "deps(//pybind:regular_cc_test)" --output label_kind | grep "rule //"
 cc_test(
     name = "regular_cc_test",
     srcs = ["regular_test.cc"],
@@ -76,8 +75,6 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
-    win_def_file = ":pybind_cc_binary.def",
-    linkstatic = False,
 )
 
 pybind_extension(
@@ -87,8 +84,6 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
-    win_def_file = ":pybind_copy_cc_binary.def",
-    linkstatic = False,
 )
 
 pywrap_extension(
@@ -98,7 +93,7 @@ pywrap_extension(
         ":pybind_copy_cc_binary"
     ],
     # Should be generated in final version
-    win_def_file = ":pybind_and_pybind_copy_pywrap_common_cc_binary.def",
+    win_def_file = ":pybind_py_test_extension.def",
 )
 
 py_test(

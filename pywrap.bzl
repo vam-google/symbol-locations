@@ -128,7 +128,7 @@ def pybind_extension(
         name,
         srcs,
         deps,
-        win_def_file,
+        win_def_file = None,
         **kwargs):
 
     win_def_file_name = "_%s_win_def" % name
@@ -136,12 +136,23 @@ def pybind_extension(
         name = name,
         deps = deps + ["@pybind11//:pybind11"],
         srcs = srcs,
+        linkstatic = True,
+        alwayslink = True,
         **kwargs
     )
-    native.alias(
-        name = win_def_file_name,
-        actual = win_def_file,
-    )
+
+    if not win_def_file:
+        native.genrule(
+            name = win_def_file_name,
+            srcs = [],
+            outs = ["%s.def" % win_def_file_name],
+            cmd = "echo \"EXPORTS\r\n  PyInit_%s\">> $@" % name,
+        )
+    else:
+        native.alias(
+            name = win_def_file_name,
+            actual = ":%s" % win_def_file,
+        )
 
 
 def _pywrap_split_library_impl(ctx):
