@@ -5,35 +5,26 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 def pywrap_extension(
         name,
         deps,
-        common_win_def_file):
+        win_def_file):
 
     # 1) Create common pywrap library. The common library should link in
     # everything except the object file with Python Extension's init function
     # PyInit_<extension_name>.
     #
-    normalized_deps = {}
-    pywrap_common_deps = []
-    for dep_label, dep_props in deps.items():
-        normalized_dep_label = Label(dep_label)
-        normalized_windef_label = Label(dep_props[1])
-        pywrap_common_deps.append(normalized_dep_label)
-        normalized_deps[normalized_dep_label] = (dep_props[0], normalized_windef_label)
-
-    pywrap_common_name = "%s_pywrap_common" % (name)
+    pywrap_common_name = "_%s_pywrap_common" % (name)
     pywrap_split_library(
         name = pywrap_common_name,
-        deps = pywrap_common_deps,
+        deps = deps,
         keep_deps = True,
     )
 
-    pywrap_common_cc_binary_name = "%s_cc_binary" % (pywrap_common_name)
+    pywrap_common_cc_binary_name = "%s_pywrap_common" % (name)
     native.cc_binary(
         name = pywrap_common_cc_binary_name,
         deps = [":%s" % pywrap_common_name],
         linkstatic = True,
         linkshared = True,
-        features = ["windows_export_all_symbols"],
-        win_def_file = common_win_def_file,
+        win_def_file = win_def_file,
     )
 
     # The following filegroup/cc_import shenanigans to extract .if.lib from
@@ -42,14 +33,14 @@ def pywrap_extension(
     # I.e. cc_binary does not work as a dependency downstream, but if wrapped
     # into a cc_import it all of a sudden starts working. I wish bazel team
     # fixed it...
-    pywrap_common_if_lib_name = "_%s_if_lib" % (pywrap_common_name)
+    pywrap_common_if_lib_name = "%s_if_lib" % (pywrap_common_name)
     native.filegroup(
         name = pywrap_common_if_lib_name,
         srcs = [":%s" % pywrap_common_cc_binary_name],
         output_group = "interface_library",
     )
 
-    pywrap_common_import_name = "_%s_import" % pywrap_common_name
+    pywrap_common_import_name = "%s_import" % pywrap_common_name
     native.cc_import(
         name = pywrap_common_import_name,
         interface_library = ":%s" % pywrap_common_if_lib_name,
@@ -64,15 +55,15 @@ def pywrap_extension(
     outs = [":%s" % pywrap_common_cc_binary_name]
     outs_data = []
 
-    for orig_label, lib_props in normalized_deps.items():
-        pybind_lib_name = lib_props[0]
-        pybind_lib_win_def_file = lib_props[1]
-
+    for dep in deps:
+        dep_name = Label(dep).name
+        pybind_lib_name = "_%s_shared_object" % dep_name
+        pybind_lib_win_def_file = "_%s_win_def" % dep_name
         pywrap_lib_name = "_%s_pywrap" % pybind_lib_name
 
         pywrap_split_library(
             name = pywrap_lib_name,
-            deps = [orig_label],
+            deps = [dep],
             keep_deps = False,
         )
         native.cc_binary(
@@ -90,14 +81,14 @@ def pywrap_extension(
 
         # The following two genrules are mutually exclusive
         # only one will be performed on each platform
-        pybind_dyn_lib_file_name_win = "%s.pyd" % pybind_lib_name
+        pybind_dyn_lib_file_name_win = "%s.pyd" % dep_name
         native.genrule(
             name = "_%s_dyn_lib_win" % pybind_lib_name,
             srcs = ["%s" % pybind_lib_name],
             outs = [pybind_dyn_lib_file_name_win],
             cmd = "cp $< $@;",
         )
-        pybind_dyn_lib_file_name = "%s.so" % pybind_lib_name
+        pybind_dyn_lib_file_name = "%s.so" % dep_name
         native.genrule(
             name = "_%s_dyn_lib" % pybind_lib_name,
             srcs = ["%s" % pybind_lib_name],
@@ -115,14 +106,14 @@ def pywrap_extension(
     #
     # Flie group is still kind of nice that it shows the actual files which
     # were built.
-    # native.filegroup(
-    #     name = name,
-    #     srcs = select({
-    #         "@bazel_tools//src/conditions:windows": outs_win,
-    #         "//conditions:default": outs
-    #     }),
-    #     data = outs_data,
-    # )
+#    native.filegroup(
+#        name = name + "_filegroup",
+#        srcs = select({
+#            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
+#            "//conditions:default": outs + outs_data
+#        }),
+#        data = outs_data,
+#    )
 
     native.py_library(
         name = name,
@@ -131,6 +122,25 @@ def pywrap_extension(
             "@bazel_tools//src/conditions:windows": outs_win + outs_data,
             "//conditions:default": outs + outs_data
         }),
+    )
+
+def pybind_extension(
+        name,
+        srcs,
+        deps,
+        win_def_file,
+        **kwargs):
+
+    win_def_file_name = "_%s_win_def" % name
+    native.cc_library(
+        name = name,
+        deps = deps + ["@pybind11//:pybind11"],
+        srcs = srcs,
+        **kwargs
+    )
+    native.alias(
+        name = win_def_file_name,
+        actual = win_def_file,
     )
 
 
@@ -144,12 +154,13 @@ def _pywrap_split_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    keep_deps = ctx.attr.keep_deps;
+    keep_deps = ctx.attr.keep_deps
     dependency_libraries = []
+
 
     for dep in ctx.attr.deps:
         # TODO: we should not rely on order of object files in CcInfo
-        no_of_deps_extracted = 0;
+        no_of_deps_extracted = 0
         for d in dep[CcInfo].linking_context.linker_inputs.to_list():
             if keep_deps and not no_of_deps_extracted:
                 no_of_deps_extracted += 1
@@ -170,7 +181,7 @@ def _pywrap_split_library_impl(ctx):
             no_of_deps_extracted += 1
             dependency_libraries.append(lib_copy)
             if not keep_deps:
-                break;
+                break
 
 
     linker_input = cc_common.create_linker_input(
