@@ -68,7 +68,7 @@ cc_test(
 # Python-specific (pybind) binaries/tests
 #
 pybind_extension(
-    name = "pybind_cc_binary",
+    name = "pybind",
     srcs = ["pybind.cc"],
     deps = [
         ":first_library",
@@ -77,7 +77,7 @@ pybind_extension(
 )
 
 pybind_extension(
-    name = "pybind_copy_cc_binary",
+    name = "pybind_copy",
     srcs = ["pybind_copy.cc"],
     deps = [
         ":first_library",
@@ -90,8 +90,8 @@ pywrap_library(
     # Should be generated in final version
     win_def_file = ":pybind_py_test_extension.def",
     deps = [
-        ":pybind_cc_binary",
-        ":pybind_copy_cc_binary",
+        ":pybind",
+        ":pybind_copy",
     ],
     #    generate_common_lib = False,
 )

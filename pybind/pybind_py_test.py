@@ -1,6 +1,6 @@
 import unittest
-from pybind import pybind_cc_binary as regular
-from pybind import pybind_copy_cc_binary as regular_copy
+from pybind import pybind as regular
+from pybind import pybind_copy as regular_copy
 
 class PybindTest(unittest.TestCase):
   def test_pybind_first(self):
