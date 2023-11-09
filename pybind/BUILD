@@ -8,7 +8,7 @@ cc_library(
     srcs = ["second_library.cc"],
     hdrs = ["second_library.h"],
     features = ["windows_export_all_symbols"],
-    linkstatic = False,
+    linkstatic = True,
     alwayslink = False,
 )
 
@@ -86,7 +86,7 @@ pybind_extension(
 )
 
 pywrap_library(
-    name = "pybind_py_test_extension",
+    name = "pybind_aggregated",
     # Should be generated in final version
     win_def_file = ":pybind_py_test_extension.def",
     deps = [
@@ -99,5 +99,5 @@ pywrap_library(
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
-    deps = [":pybind_py_test_extension"],
+    deps = [":pybind_aggregated"],
 )
