@@ -93,7 +93,7 @@ pywrap_library(
         ":pybind",
         ":pybind_copy",
     ],
-    #    generate_common_lib = False,
+#    generate_common_lib = False,
 )
 
 py_test(

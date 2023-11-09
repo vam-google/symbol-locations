@@ -75,16 +75,16 @@ def pywrap_library(
                 deps = [dep],
                 keep_deps = False,
             )
-            outs_data.append(":%s" % pybind_lib_name)
             common_deps.append(":%s" % pywrap_common_import_name)
         else:
             pywrap_lib_name = dep_name
+        outs_data.append(":%s" % pybind_lib_name)
 
         native.cc_binary(
             name = pybind_lib_name,
             srcs = [],
             deps = [":%s" % pywrap_lib_name] + common_deps,
-            linkstatic = True,
+            linkstatic = generate_common_lib,
             linkshared = True,
             win_def_file = pybind_lib_win_def_file,
         )
