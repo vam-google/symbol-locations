@@ -88,7 +88,7 @@ pybind_extension(
 pywrap_library(
     name = "pybind_aggregated",
     # Should be generated in final version
-    win_def_file = ":pybind_py_test_extension.def",
+    win_def_file = ":pybind_aggregated.def",
     deps = [
         ":pybind",
         ":pybind_copy",
