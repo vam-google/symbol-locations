@@ -21,7 +21,7 @@ def pywrap_library(
         keep_deps = True,
     )
 
-    pywrap_common_cc_binary_name = "%s_pywrap_common" % (name)
+    pywrap_common_cc_binary_name = "%s_common" % (name)
     native.cc_binary(
         name = pywrap_common_cc_binary_name,
         deps = [":%s" % pywrap_common_name],
