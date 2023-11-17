@@ -1,5 +1,4 @@
-load("//:pywrap.bzl", "pybind_extension", "pywrap_library", "pywrap_split_library")
-
+load("//:pywrap.bzl", "pybind_extension", "pywrap_library")
 #
 # Logic shared between python and regular C++ binaries/test
 #
@@ -8,7 +7,7 @@ cc_library(
     srcs = ["second_library.cc"],
     hdrs = ["second_library.h"],
     features = ["windows_export_all_symbols"],
-    linkstatic = True,
+    linkstatic = False,
     alwayslink = False,
 )
 
@@ -85,19 +84,52 @@ pybind_extension(
     ],
 )
 
+py_library(
+    name = "py_library_1",
+    srcs = [],
+    deps = [":pybind"],
+)
+
+
+py_library(
+    name = "py_library_2",
+    srcs = [],
+    # "pybind" is already in py_library1, duplicats "pybind" on purpose
+    # to test that it is ok
+    deps = [":py_library_3", ":pybind"],
+)
+
+py_library(
+    name = "py_library_3",
+    srcs = [],
+    # The only place where pybind_copy is provided, and it will be consumed by
+    # pybind_aggregated only as a multi-level transitive dependency.
+    deps = [":pybind_copy"],
+)
+
+
 pywrap_library(
     name = "pybind_aggregated",
     # Should be generated in final version
     win_def_file = ":pybind_aggregated.def",
     deps = [
+#        ":py_library_1",
+#        ":py_library_2",
+#        ":py_library_3",
         ":pybind",
         ":pybind_copy",
     ],
+    pywrap_count = 2,
 #    generate_common_lib = False,
 )
 
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
-    deps = [":pybind_aggregated"],
+    deps = [
+        ":pybind_aggregated",
+        # not needed, since duplicated, but passed to check that duplication is
+        # ok
+        "py_library_1"
+    ],
 )

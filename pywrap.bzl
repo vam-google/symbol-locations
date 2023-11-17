@@ -1,24 +1,48 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
+PywrapInfo = provider(
+    fields = {
+        "cc_info": "Wrapped CcInfo",
+        "owner": "Owner's label",
+    }
+)
+
+CollectedPywrapInfo = provider(
+    fields = {
+        "pywrap_infos": "depset of PywrapInfo providers"
+    }
+)
+
 # TODO: we need to generate win_def_file, but it should be simple
 def pywrap_library(
         name,
         deps,
-        win_def_file,
+        win_def_file = None,
+        pywrap_count = 1,
+        extra_deps = ["@pybind11//:pybind11"],
         # For demonstration purposes only.
         # For real work we always want:
         #   generate_common_lib = True
         # as it is the whole point of pywrap_extension
         generate_common_lib = True):
+
     # 1) Create common pywrap library. The common library should link in
     # everything except the object file with Python Extension's init function
     # PyInit_<extension_name>.
     #
-    pywrap_common_name = "_%s_pywrap_common" % (name)
-    pywrap_split_library(
-        name = pywrap_common_name,
+    pywrap_info_collector_name = "_%s_info_collector" % (name)
+
+    collected_pywrap_infos(
+        name = pywrap_info_collector_name,
         deps = deps,
-        keep_deps = True,
+        pywrap_count = pywrap_count,
+    )
+
+    pywrap_common_name = "_%s_pywrap_common" % (name)
+    _pywrap_split_library(
+        name = pywrap_common_name,
+        dep = ":%s" % pywrap_info_collector_name,
+        pywrap_index = -1,
     )
 
     pywrap_common_cc_binary_name = "%s_common" % (name)
@@ -54,82 +78,68 @@ def pywrap_library(
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
-    if generate_common_lib:
-        outs_win = [":%s" % pywrap_common_cc_binary_name]
-        outs = [":%s" % pywrap_common_cc_binary_name]
-    else:
-        outs_win = []
-        outs = []
+    outs_win = [":%s" % pywrap_common_cc_binary_name]
+    outs = [":%s" % pywrap_common_cc_binary_name]
     outs_data = []
+    shared_objects = []
+    common_deps = [":%s" % pywrap_common_import_name] + extra_deps
 
-    for dep in deps:
-        dep_name = Label(dep).name
-        pybind_lib_name = "_%s_shared_object" % dep_name
-        pybind_lib_win_def_file = "_%s_win_def" % dep_name
+    for pywrap_index in range(0, pywrap_count):
+        dep_name = "_%s_%s" % (name, pywrap_index)
+        shared_object_name = "%s_shared_object" % dep_name
+        win_def_name = "%s_win_def" % dep_name
+        pywrap_name = "%s_pywrap" % dep_name
 
-        common_deps = ["@pybind11//:pybind11"]  # why do we need it?
         if generate_common_lib:
-            pywrap_lib_name = "_%s_pywrap" % pybind_lib_name
-            pywrap_split_library(
-                name = pywrap_lib_name,
-                deps = [dep],
-                keep_deps = False,
+            _pywrap_split_library(
+                name = pywrap_name,
+                dep = ":%s" % pywrap_info_collector_name,
+                pywrap_index = pywrap_index,
             )
-            common_deps.append(":%s" % pywrap_common_import_name)
         else:
-            pywrap_lib_name = dep_name
-        outs_data.append(":%s" % pybind_lib_name)
+            pywrap_name = "_%s_cc_library" % Label(deps[pywrap_index]).name
+
+        _generated_win_def_file(
+            name = win_def_name,
+            dep = ":%s" % pywrap_info_collector_name,
+            pywrap_index = pywrap_index,
+        )
 
         native.cc_binary(
-            name = pybind_lib_name,
+            name = shared_object_name,
             srcs = [],
-            deps = [":%s" % pywrap_lib_name] + common_deps,
-            linkstatic = generate_common_lib,
+            deps = [":%s" % pywrap_name] + common_deps,
             linkshared = True,
-            win_def_file = pybind_lib_win_def_file,
+            linkstatic = generate_common_lib,
+            win_def_file = ":%s" % win_def_name,
         )
 
-        # The following two genrules are mutually exclusive
-        # only one will be performed on each platform
-        pybind_dyn_lib_file_name_win = "%s.pyd" % dep_name
-        native.genrule(
-            name = "_%s_dyn_lib_win" % pybind_lib_name,
-            srcs = ["%s" % pybind_lib_name],
-            outs = [pybind_dyn_lib_file_name_win],
-            cmd = "cp $< $@;",
-        )
-        pybind_dyn_lib_file_name = "%s.so" % dep_name
-        native.genrule(
-            name = "_%s_dyn_lib" % pybind_lib_name,
-            srcs = ["%s" % pybind_lib_name],
-            outs = [pybind_dyn_lib_file_name],
-            cmd = "cp $< $@;",
-        )
-        outs_win.append(":%s" % pybind_dyn_lib_file_name_win)
-        outs.append(":%s" % pybind_dyn_lib_file_name)
+        outs_data.append(":%s" % shared_object_name)
+        shared_objects.append(":%s" % shared_object_name)
 
-    # 3) The output of this macro is a single filegroup, which has the single
-    # common library and all thin individual wrappers (with proper
-    # platform-specific file extensions) together. Ready to be added as a simple
-    # "data" entry in any py_test or py_binary target down the stream.
+
+    # 3) Construct final binaries with proper names and put them as data
+    # attribute in a py_library, which is the final and only public artifact of
+    # this macro
     #
-    # The filegroup is for debugging purposes (never used for anything real)
-    native.filegroup(
-        name = "_%s_filegroup" % name,
-        srcs = select({
-            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
-            "//conditions:default": outs + outs_data,
-        }),
-        data = outs_data,
-    )
+    pywrap_binaries_name = "_%s_binaries" % name
+    _pywrap_binaries(
+        name = pywrap_binaries_name,
+        collected_pywraps = ":%s" % pywrap_info_collector_name,
+        deps = shared_objects,
+        extension = select({
+            "@bazel_tools//src/conditions:windows": ".pyd",
+            "//conditions:default": ".so",
+        })
+     )
 
     native.py_library(
         name = name,
         srcs = [],
-        data = select({
-            "@bazel_tools//src/conditions:windows": outs_win + outs_data,
-            "//conditions:default": outs + outs_data,
-        }),
+        data = [
+            ":%s" % pywrap_common_cc_binary_name,
+            "%s" % pywrap_binaries_name
+        ] + shared_objects,
     )
 
 def pybind_extension(
@@ -138,9 +148,10 @@ def pybind_extension(
         deps,
         win_def_file = None,
         **kwargs):
-    win_def_file_name = "_%s_win_def" % name
+    cc_library_name = "_%s_cc_library" % name
+
     native.cc_library(
-        name = name,
+        name = cc_library_name,
         deps = deps + ["@pybind11//:pybind11"],
         srcs = srcs,
         linkstatic = True,
@@ -148,21 +159,40 @@ def pybind_extension(
         **kwargs
     )
 
-    if not win_def_file:
-        native.genrule(
-            name = win_def_file_name,
-            srcs = [],
-            outs = ["%s.def" % win_def_file_name],
-            cmd = "echo \"EXPORTS\r\n  PyInit_%s\">> $@" % name,
-        )
-    else:
-        native.alias(
-            name = win_def_file_name,
-            actual = ":%s" % win_def_file,
-        )
+    _pywrap_info_wrapper(
+        name = name,
+        deps = ["%s" % cc_library_name],
+    )
+
+def _generated_win_def_file_impl(ctx):
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    pywrap_info = pywrap_infos[ctx.attr.pywrap_index]
+    win_def_file_name = "%s.def" % pywrap_info.owner.name
+    win_def_file = ctx.actions.declare_file(win_def_file_name)
+    ctx.actions.run_shell(
+        inputs = [],
+        command = "echo \"EXPORTS\r\n  PyInit_{owner}\">> {win_def_file}".format(
+            owner = pywrap_info.owner.name,
+            win_def_file = win_def_file.path
+        ),
+        outputs = [win_def_file],
+    )
+
+    return [DefaultInfo(files = depset(direct = [win_def_file]))]
+
+_generated_win_def_file = rule(
+    attrs = {
+        "dep": attr.label(
+            allow_files = False,
+            providers = [CollectedPywrapInfo],
+        ),
+        "pywrap_index": attr.int(mandatory = True),
+    },
+    implementation = _generated_win_def_file_impl,
+)
+
 
 def _pywrap_split_library_impl(ctx):
-    deps = ctx.attr.deps
     cc_toolchain = find_cpp_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
@@ -171,33 +201,33 @@ def _pywrap_split_library_impl(ctx):
         unsupported_features = ctx.disabled_features,
     )
 
-    keep_deps = ctx.attr.keep_deps
     dependency_libraries = []
 
-    for dep in ctx.attr.deps:
+    pywrap_index = ctx.attr.pywrap_index
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    if pywrap_index >= 0:
+        pywrap_infos = [pywrap_infos[pywrap_index]]
+
+    for pywrap_info in pywrap_infos:
+        cc_info = pywrap_info.cc_info
         # TODO: we should not rely on order of object files in CcInfo
-        no_of_deps_extracted = 0
-        for d in dep[CcInfo].linking_context.linker_inputs.to_list():
-            if keep_deps and not no_of_deps_extracted:
-                no_of_deps_extracted += 1
-                continue
-            for lib in d.libraries:
+        if pywrap_index >= 0:
+            linker_inputs = cc_info.linking_context.linker_inputs.to_list()[:1]
+        else:
+            linker_inputs = cc_info.linking_context.linker_inputs.to_list()[1:]
+
+        for linker_input in linker_inputs:
+            for lib in linker_input.libraries:
                 lib_copy = cc_common.create_library_to_link(
                     actions = ctx.actions,
                     cc_toolchain = cc_toolchain,
                     feature_configuration = feature_configuration,
                     static_library = lib.static_library,
                     pic_static_library = lib.pic_static_library,
-                    # dynamic_library = lib.dynamic_library,
-                    # dynamic_library_symlink_path = "",
-                    # interface_library_symlink_path = "",
                     interface_library = lib.interface_library,
                     alwayslink = True,
                 )
-            no_of_deps_extracted += 1
-            dependency_libraries.append(lib_copy)
-            if not keep_deps:
-                break
+                dependency_libraries.append(lib_copy)
 
     linker_input = cc_common.create_linker_input(
         owner = ctx.label,
@@ -210,18 +240,147 @@ def _pywrap_split_library_impl(ctx):
 
     return [CcInfo(linking_context = linking_context)]
 
-pywrap_split_library = rule(
+_pywrap_split_library = rule(
     attrs = {
-        "deps": attr.label_list(
-            allow_files = True,
-            providers = [CcInfo],
+        "dep": attr.label(
+            allow_files = False,
+            providers = [CollectedPywrapInfo],
         ),
         "_cc_toolchain": attr.label(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
         ),
-        "keep_deps": attr.bool(),
+        "pywrap_index": attr.int(mandatory = True, default = -1),
     },
     fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
     implementation = _pywrap_split_library_impl,
+)
+
+def _pywrap_info_wrapper_impl(ctx):
+    #the attribute is called deps not dep to match aspect's attr_aspects
+    if len(ctx.attr.deps) != 1:
+        fail("deps attribute must contain exactly one dependency")
+
+    wrapped_dep = ctx.attr.deps[0]
+    return [
+        PyInfo(transitive_sources = depset()),
+        PywrapInfo(
+            cc_info = wrapped_dep[CcInfo],
+            owner = ctx.label,
+        ),
+    ]
+
+_pywrap_info_wrapper = rule(
+    attrs = {
+        "deps": attr.label_list(providers = [CcInfo]),
+    },
+
+    implementation = _pywrap_info_wrapper_impl
+)
+
+def _pywrap_info_collector_aspect_impl(target, ctx):
+    cc_infos = []
+    transitive_cc_infos = []
+    pywrap_infos = []
+    transitive_pywrap_infos = []
+    if PywrapInfo in target:
+        pywrap_infos.append(target[PywrapInfo])
+
+    if hasattr(ctx.rule.attr, "deps"):
+        for dep in ctx.rule.attr.deps:
+            if CollectedPywrapInfo in dep:
+                collected_pywrap_info = dep[CollectedPywrapInfo]
+                transitive_pywrap_infos.append(collected_pywrap_info.pywrap_infos)
+
+    return [
+        CollectedPywrapInfo(
+            pywrap_infos = depset(
+                direct = pywrap_infos,
+                transitive = transitive_pywrap_infos,
+                order = "topological"
+            ),
+        )
+    ]
+
+_pywrap_info_collector_aspect = aspect(
+    attr_aspects = ["deps"],
+    implementation = _pywrap_info_collector_aspect_impl
+)
+
+def _collected_pywrap_infos_impl(ctx):
+    pywrap_infos = []
+    for dep in ctx.attr.deps:
+        if CollectedPywrapInfo in dep:
+            pywrap_infos.append(dep[CollectedPywrapInfo].pywrap_infos)
+
+    rv = CollectedPywrapInfo(pywrap_infos = depset(transitive = pywrap_infos, order = "topological"))
+    pywraps = rv.pywrap_infos.to_list();
+
+    if ctx.attr.pywrap_count != len(pywraps):
+        found_pywraps = "\n        ".join([str(pw.owner) for pw in pywraps])
+        fail("""
+    Number of actual pywrap libraries does not match expected pywrap_count.
+    Expected pywrap_count: {expected_pywrap_count}
+    Actual pywrap_count: {actual_pywra_count}
+    Actual pywrap libraries in the transitive closure of {label}:
+        {found_pywraps}
+    """.format(expected_pywrap_count = ctx.attr.pywrap_count,
+               actual_pywra_count = len(pywraps),
+               label = ctx.label,
+               found_pywraps = found_pywraps))
+
+    return [rv]
+
+collected_pywrap_infos = rule(
+    attrs = {
+        "deps": attr.label_list(
+            aspects = [_pywrap_info_collector_aspect],
+            providers = [PyInfo]
+        ),
+        "pywrap_count": attr.int(mandatory = True, default = 1),
+    },
+
+    implementation = _collected_pywrap_infos_impl
+)
+
+def _pywrap_binaries_impl(ctx):
+    deps = ctx.attr.deps
+    dep = ctx.attr.collected_pywraps
+    extension = ctx.attr.extension
+
+    pywrap_infos = dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    original_binaries = deps
+
+    if len(pywrap_infos) != len(original_binaries):
+        fail()
+
+    final_binaries = []
+    for i in range(0, len(pywrap_infos)):
+        pywrap_info = pywrap_infos[i]
+        original_binary = original_binaries[i]
+        final_binary_name = "%s%s" % (pywrap_info.owner.name, extension)
+        final_binary = ctx.actions.declare_file(final_binary_name)
+        original_binary_file = original_binary.files.to_list()[0]
+        ctx.actions.run_shell(
+            inputs = [original_binary_file],
+            command = "cp {original} {final}".format(
+                original = original_binary_file.path,
+                final = final_binary.path
+            ),
+            outputs = [final_binary],
+        )
+
+        final_binaries.append(final_binary)
+
+    return [DefaultInfo(files = depset(direct = final_binaries))]
+
+
+_pywrap_binaries = rule(
+    attrs = {
+        "deps": attr.label_list(mandatory = True, allow_files = False),
+        "collected_pywraps": attr.label(mandatory = True, allow_files = False),
+        "extension": attr.string(default = ".so"),
+    },
+
+    implementation = _pywrap_binaries_impl
 )
