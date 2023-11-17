@@ -113,11 +113,11 @@ pywrap_library(
     # Should be generated in final version
     win_def_file = ":pybind_aggregated.def",
     deps = [
-#        ":py_library_1",
-#        ":py_library_2",
-#        ":py_library_3",
-        ":pybind",
-        ":pybind_copy",
+        ":py_library_1",
+        ":py_library_2",
+        ":py_library_3",
+#        ":pybind",
+#        ":pybind_copy",
     ],
     pywrap_count = 2,
 #    generate_common_lib = False,

@@ -78,9 +78,6 @@ def pywrap_library(
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
-    outs_win = [":%s" % pywrap_common_cc_binary_name]
-    outs = [":%s" % pywrap_common_cc_binary_name]
-    outs_data = []
     shared_objects = []
     common_deps = [":%s" % pywrap_common_import_name] + extra_deps
 
@@ -113,8 +110,6 @@ def pywrap_library(
             linkstatic = generate_common_lib,
             win_def_file = ":%s" % win_def_name,
         )
-
-        outs_data.append(":%s" % shared_object_name)
         shared_objects.append(":%s" % shared_object_name)
 
 
