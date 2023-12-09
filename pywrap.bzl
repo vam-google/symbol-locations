@@ -45,41 +45,45 @@ def pywrap_library(
         pywrap_index = -1,
     )
 
-    pywrap_common_cc_binary_name = "%s_common" % (name)
-    native.cc_binary(
-        name = pywrap_common_cc_binary_name,
-        deps = [":%s" % pywrap_common_name],
-        linkstatic = True,
-        linkshared = True,
-        win_def_file = win_def_file,
-    )
+    common_deps = []
 
-    # The following filegroup/cc_import shenanigans to extract .if.lib from
-    # cc_binary should not be needed, but otherwise bazel can't consume
-    # cc_binary properly as a dep in downstream cc_binary/cc_test targets.
-    # I.e. cc_binary does not work as a dependency downstream, but if wrapped
-    # into a cc_import it all of a sudden starts working. I wish bazel team
-    # fixed it...
-    pywrap_common_if_lib_name = "%s_if_lib" % (pywrap_common_name)
-    native.filegroup(
-        name = pywrap_common_if_lib_name,
-        srcs = [":%s" % pywrap_common_cc_binary_name],
-        output_group = "interface_library",
-    )
+    if generate_common_lib:
+        pywrap_common_cc_binary_name = "%s_common" % (name)
+        native.cc_binary(
+            name = pywrap_common_cc_binary_name,
+            deps = [":%s" % pywrap_common_name],
+            linkstatic = True,
+            linkshared = True,
+            win_def_file = win_def_file,
+        )
 
-    pywrap_common_import_name = "%s_import" % pywrap_common_name
-    native.cc_import(
-        name = pywrap_common_import_name,
-        interface_library = ":%s" % pywrap_common_if_lib_name,
-        shared_library = ":%s" % pywrap_common_cc_binary_name,
-    )
+        # The following filegroup/cc_import shenanigans to extract .if.lib from
+        # cc_binary should not be needed, but otherwise bazel can't consume
+        # cc_binary properly as a dep in downstream cc_binary/cc_test targets.
+        # I.e. cc_binary does not work as a dependency downstream, but if wrapped
+        # into a cc_import it all of a sudden starts working. I wish bazel team
+        # fixed it...
+        pywrap_common_if_lib_name = "%s_if_lib" % (pywrap_common_name)
+        native.filegroup(
+            name = pywrap_common_if_lib_name,
+            srcs = [":%s" % pywrap_common_cc_binary_name],
+            output_group = "interface_library",
+        )
+
+        pywrap_common_import_name = "%s_import" % pywrap_common_name
+        native.cc_import(
+            name = pywrap_common_import_name,
+            interface_library = ":%s" % pywrap_common_if_lib_name,
+            shared_library = ":%s" % pywrap_common_cc_binary_name,
+        )
+        common_deps.append(":%s" % pywrap_common_import_name)
 
     # 2) Create individual super-thin pywrap libraries, which depend on the
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
     shared_objects = []
-    common_deps = [":%s" % pywrap_common_import_name] + extra_deps
+    common_deps.extend(extra_deps)
 
     for pywrap_index in range(0, pywrap_count):
         dep_name = "_%s_%s" % (name, pywrap_index)
@@ -128,13 +132,15 @@ def pywrap_library(
         })
      )
 
+    binaries_data = ["%s" % pywrap_binaries_name] + shared_objects
+    if generate_common_lib:
+        binaries_data.append(":%s" % pywrap_common_cc_binary_name)
+
+
     native.py_library(
         name = name,
         srcs = [],
-        data = [
-            ":%s" % pywrap_common_cc_binary_name,
-            "%s" % pywrap_binaries_name
-        ] + shared_objects,
+        data = binaries_data,
     )
 
 def pybind_extension(
@@ -213,15 +219,17 @@ def _pywrap_split_library_impl(ctx):
 
         for linker_input in linker_inputs:
             for lib in linker_input.libraries:
-                lib_copy = cc_common.create_library_to_link(
-                    actions = ctx.actions,
-                    cc_toolchain = cc_toolchain,
-                    feature_configuration = feature_configuration,
-                    static_library = lib.static_library,
-                    pic_static_library = lib.pic_static_library,
-                    interface_library = lib.interface_library,
-                    alwayslink = True,
-                )
+                lib_copy = lib;
+                if not lib.alwayslink:
+                    lib_copy = cc_common.create_library_to_link(
+                        actions = ctx.actions,
+                        cc_toolchain = cc_toolchain,
+                        feature_configuration = feature_configuration,
+                        static_library = lib.static_library,
+                        pic_static_library = lib.pic_static_library,
+                        interface_library = lib.interface_library,
+                        alwayslink = True,
+                    )
                 dependency_libraries.append(lib_copy)
 
     linker_input = cc_common.create_linker_input(

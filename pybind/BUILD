@@ -7,7 +7,7 @@ cc_library(
     srcs = ["second_library.cc"],
     hdrs = ["second_library.h"],
     features = ["windows_export_all_symbols"],
-    linkstatic = False,
+    linkstatic = True,
     alwayslink = False,
 )
 
