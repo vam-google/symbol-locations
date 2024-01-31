@@ -13,7 +13,6 @@ CollectedPywrapInfo = provider(
     }
 )
 
-# TODO: we need to generate win_def_file, but it should be simple
 def pywrap_library(
         name,
         deps,
@@ -49,13 +48,6 @@ def pywrap_library(
 
     if generate_common_lib:
         pywrap_common_cc_binary_name = "%s_common" % (name)
-        native.cc_binary(
-            name = pywrap_common_cc_binary_name,
-            deps = [":%s" % pywrap_common_name],
-            linkstatic = True,
-            linkshared = True,
-            win_def_file = win_def_file,
-        )
 
         # The following filegroup/cc_import shenanigans to extract .if.lib from
         # cc_binary should not be needed, but otherwise bazel can't consume
@@ -143,6 +135,21 @@ def pywrap_library(
         data = binaries_data,
     )
 
+    if generate_common_lib:
+        gen_pywrap_win_def_file = "%s_gen_def" % pywrap_common_name
+        _generated_pywrap_win_def_file(
+            name = gen_pywrap_win_def_file,
+            dep = ":%s" % pywrap_info_collector_name,
+            pywrap_index = -1,
+        )
+        native.cc_binary(
+            name = pywrap_common_cc_binary_name,
+            deps = [":%s" % pywrap_common_name],
+            linkstatic = True,
+            linkshared = True,
+            win_def_file = gen_pywrap_win_def_file,
+        )
+
 def pybind_extension(
         name,
         srcs,
@@ -164,6 +171,79 @@ def pybind_extension(
         name = name,
         deps = ["%s" % cc_library_name],
     )
+
+def _generated_pywrap_win_def_file_impl(ctx):
+    cc_toolchain = find_cpp_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    dependency_libraries = []
+
+    pywrap_index = ctx.attr.pywrap_index
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    if pywrap_index >= 0:
+        pywrap_infos = [pywrap_infos[pywrap_index]]
+
+    for pywrap_info in pywrap_infos:
+        cc_info = pywrap_info.cc_info
+
+        linker_inputs = cc_info.linking_context.linker_inputs.to_list()
+        
+        for linker_input in linker_inputs:
+            for lib in linker_input.libraries:
+                lib_copy = lib;
+                if not lib.alwayslink:
+                    lib_copy = cc_common.create_library_to_link(
+                        actions = ctx.actions,
+                        cc_toolchain = cc_toolchain,
+                        feature_configuration = feature_configuration,
+                        static_library = lib.static_library,
+                        pic_static_library = lib.pic_static_library,
+                        interface_library = lib.interface_library,
+                        alwayslink = True,
+                    )
+                if lib_copy.objects:
+                    dependency_libraries.append(lib_copy)
+
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    pywrap_info = pywrap_infos[ctx.attr.pywrap_index]
+    win_def_file_name = "%s.gen.def" % pywrap_info.owner.name
+    win_def_file = ctx.actions.declare_file(win_def_file_name)
+    print("win_def_file.path:", win_def_file.path)
+    print("dependency_libraries[0][static_library].path:", dependency_libraries[0].static_library.path)
+    ctx.actions.run_shell(
+        inputs = [dependency_library.static_library for dependency_library in dependency_libraries],
+        # command = "echo \"EXPORTS\r\n\t?first_func@@YAHH@Z\r\n\t?second_func@@YAHH@Z\r\n\">> {win_def_file}".format(
+        command = "echo \"EXPORTS\r\n\">> {win_def_file} && \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx86\\x86\\dumpbin.exe\" //SYMBOLS {dependency_library} | grep 'UNDEF' | grep 'External' | grep '()' | cut -d\" \" -f16 | grep '\\?[a-zA-Z]\\+.*'>> {win_def_file}".format(
+            # dependency_library = "bazel-out/x64_windows-opt/bin/pybind/_pybind_cc_library.lo.lib",
+            # dependency_library = "bazel-out/x64_windows-opt/bin/pybind/_objs/_pybind_cc_library/pybind.obj",
+            dependency_library = " ".join([l.static_library.path for l in dependency_libraries]),
+            win_def_file = win_def_file.path,
+        ),
+        outputs = [win_def_file],
+    )
+
+    return [DefaultInfo(files = depset(direct = [win_def_file]))]
+
+_generated_pywrap_win_def_file = rule(
+    attrs = {
+        "dep": attr.label(
+            allow_files = False,
+            providers = [CollectedPywrapInfo],
+        ),
+        "_cc_toolchain": attr.label(
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+        ),
+        "pywrap_index": attr.int(mandatory = True, default = -1),
+    },
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
+    implementation = _generated_pywrap_win_def_file_impl,
+)
 
 def _generated_win_def_file_impl(ctx):
     pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
