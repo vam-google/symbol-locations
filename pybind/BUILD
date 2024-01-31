@@ -9,6 +9,7 @@ cc_library(
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -19,6 +20,7 @@ cc_library(
     linkstatic = False,
     deps = [":second_library"],
     alwayslink = False,
+    visibility = ["//visibility:public"],
 )
 
 #
@@ -73,6 +75,7 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
+    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
@@ -82,6 +85,7 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
+    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -120,6 +124,7 @@ pywrap_library(
 #        ":pybind_copy",
     ],
     pywrap_count = 2,
+    visibility = ["//visibility:public"],
 #    generate_common_lib = False,
 )
 

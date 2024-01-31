@@ -1,7 +1,11 @@
-workspace(name = "symbol_locations")
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("//:pywrap_repositories.bzl", "pywrap_repositories")
+
+local_repository(
+    name = "symbol_locations",
+    path = "../../symbol-locations",
+)
+
+load("@symbol_locations//:pywrap_repositories.bzl", "pywrap_repositories")
 
 pywrap_repositories()
 
@@ -24,4 +28,3 @@ python_configure(
     name = "local_config_python",
     python_interpreter_target = interpreter,
 )
-
