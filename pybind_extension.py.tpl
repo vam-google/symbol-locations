@@ -19,7 +19,7 @@ def __calc_import_path():
 
 def __find_pywrap_module_by_target_label(target_label):
   if target_label:
-    return target_label.split("//", 1)[1].split(":")[0]
+    return target_label.split("//", 1)[1].split(":")[0].replace("/", ".")
   return None
 
 
