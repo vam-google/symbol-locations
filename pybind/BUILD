@@ -3,13 +3,21 @@ load("//:pywrap.bzl", "pybind_extension", "pywrap_library")
 # Logic shared between python and regular C++ binaries/test
 #
 cc_library(
+    name = "third_library",
+    srcs = ["third_library.cc"],
+    hdrs = ["third_library.h"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
+    alwayslink = False,
+)
+
+cc_library(
     name = "second_library",
     srcs = ["second_library.cc"],
     hdrs = ["second_library.h"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -20,7 +28,6 @@ cc_library(
     linkstatic = False,
     deps = [":second_library"],
     alwayslink = False,
-    visibility = ["//visibility:public"],
 )
 
 #
@@ -75,6 +82,9 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
+    alwayslink_deps = [
+        ":third_library",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -84,6 +94,9 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
+    ],
+    alwayslink_deps = [
+        ":third_library",
     ],
     visibility = ["//visibility:public"],
 )
