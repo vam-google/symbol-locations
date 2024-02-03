@@ -82,7 +82,7 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
-    alwayslink_deps = [
+    private_deps = [
         ":third_library",
     ],
     visibility = ["//visibility:public"],
@@ -95,7 +95,7 @@ pybind_extension(
         ":first_library",
         ":second_library",
     ],
-    alwayslink_deps = [
+    private_deps = [
         ":third_library",
     ],
     visibility = ["//visibility:public"],
