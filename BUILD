@@ -1,5 +1,3 @@
-exports_files(["pybind_extension.py.tpl"])
-
 config_setting(
     name = "windows",
     values = {"cpu": "x64_windows"},

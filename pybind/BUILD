@@ -1,4 +1,4 @@
-load("//:pywrap.bzl", "pybind_extension", "pywrap_library")
+load("//rules_pywrap:pywrap.bzl", "pybind_extension", "pywrap_library")
 #load("//:pywrap_repositories.bzl", "py_test")
 
 #

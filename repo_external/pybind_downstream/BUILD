@@ -1,4 +1,4 @@
-load("@symbol_locations//:pywrap.bzl", "pybind_extension", "pywrap_library")
+load("@symbol_locations//rules_pywrap:pywrap.bzl", "pybind_extension", "pywrap_library")
 
 pywrap_library(
     name = "pybind_downstream_aggregated",

@@ -1,4 +1,4 @@
-load("//:pywrap.bzl", "pywrap_library")
+load("//rules_pywrap:pywrap.bzl", "pywrap_library")
 
 pywrap_library(
     name = "pybind_external_aggregated",

@@ -344,7 +344,7 @@ _pywrap_info_wrapper = rule(
         "private_deps": attr.label_list(providers = [CcInfo]),
         "py_stub_src": attr.label(
             allow_single_file = True,
-            default = Label("//:pybind_extension.py.tpl")
+            default = Label("//rules_pywrap:pybind_extension.py.tpl")
         ),
     },
 
