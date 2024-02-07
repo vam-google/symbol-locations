@@ -43,7 +43,7 @@ def pywrap_library(
         pywrap_count = actual_pywrap_count,
     )
 
-    pywrap_common_name = "_%s_pywrap_common" % (name)
+    pywrap_common_name = "_%s_pywrap_internal" % (name)
     _pywrap_split_library(
         name = pywrap_common_name,
         dep = ":%s" % pywrap_info_collector_name,
@@ -54,7 +54,7 @@ def pywrap_library(
 
     common_deps = []
 
-    pywrap_common_cc_binary_name = "%s_common" % (name)
+    pywrap_common_cc_binary_name = "%s_internal" % (name)
     native.cc_binary(
         name = pywrap_common_cc_binary_name,
         deps = [":%s" % pywrap_common_name],

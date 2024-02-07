@@ -1,4 +1,6 @@
 load("//:pywrap.bzl", "pybind_extension", "pywrap_library")
+#load("//:pywrap_repositories.bzl", "py_test")
+
 #
 # Logic shared between python and regular C++ binaries/test
 #
