@@ -87,6 +87,9 @@ pybind_extension(
     private_deps = [
         ":third_library",
     ],
+    additional_exported_symbols = [
+        "_EXTRA_SYMBOL"
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -100,6 +103,7 @@ pybind_extension(
     private_deps = [
         ":third_library",
     ],
+    outer_module_name = "sub_pybind",
     visibility = ["//visibility:public"],
 )
 

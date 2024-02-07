@@ -6,6 +6,7 @@ PywrapInfo = provider(
         "private_linker_inputs": "Libraries to link only to individual pywrap libraries, but not in commmon library",
         "owner": "Owner's label",
         "py_stub": "Pybind Python stub used to resolve cross-package references",
+        "outer_module_name": "Outer module name for deduping libraries with the same name",
     }
 )
 
@@ -178,7 +179,10 @@ def pybind_extension(
         win_def_file = None,
         testonly = None,
         compatible_with = None,
+        outer_module_name = "",
+        additional_exported_symbols = [],
         **kwargs):
+
     cc_library_name = "_%s_cc_library" % name
 
     native.cc_library(
@@ -197,6 +201,8 @@ def pybind_extension(
         name = name,
         deps = ["%s" % cc_library_name],
         private_deps = private_deps,
+        outer_module_name = outer_module_name,
+        additional_exported_symbols = additional_exported_symbols,
         testonly = testonly,
         compatible_with = compatible_with,
         visibility = visibility,
@@ -313,9 +319,21 @@ def _pywrap_info_wrapper_impl(ctx):
         fail("deps attribute must contain exactly one dependency")
 
     py_stub = ctx.actions.declare_file("%s.py" % ctx.attr.name)
+    substitutions = {}
+    outer_module_name = ctx.attr.outer_module_name
+    if outer_module_name:
+        val = 'outer_module_name = "%s."' %  outer_module_name
+        substitutions['outer_module_name = "" # template_val'] = val
+
+    additional_exported_symbols = ctx.attr.additional_exported_symbols
+    if additional_exported_symbols:
+        val = "extra_names = %s # template_val" % additional_exported_symbols
+        substitutions["extra_names = [] # template_val"] = val
+
     ctx.actions.expand_template(
         template = ctx.file.py_stub_src,
-        output = py_stub
+        output = py_stub,
+        substitutions = substitutions,
     )
 
     wrapped_dep = ctx.attr.deps[0]
@@ -335,6 +353,7 @@ def _pywrap_info_wrapper_impl(ctx):
             private_linker_inputs = private_linker_inputs,
             owner = ctx.label,
             py_stub = py_stub,
+            outer_module_name = outer_module_name,
         ),
     ]
 
@@ -342,10 +361,15 @@ _pywrap_info_wrapper = rule(
     attrs = {
         "deps": attr.label_list(providers = [CcInfo]),
         "private_deps": attr.label_list(providers = [CcInfo]),
+        "outer_module_name": attr.string(mandatory = False, default = ""),
         "py_stub_src": attr.label(
             allow_single_file = True,
             default = Label("//rules_pywrap:pybind_extension.py.tpl")
         ),
+        "additional_exported_symbols": attr.string_list(
+            mandatory = False,
+            default = []
+        )
     },
 
     implementation = _pywrap_info_wrapper_impl
@@ -441,7 +465,10 @@ def _pywrap_binaries_impl(ctx):
     for i in range(0, len(pywrap_infos)):
         pywrap_info = pywrap_infos[i]
         original_binary = original_binaries[i]
-        final_binary_name = "%s%s" % (pywrap_info.owner.name, extension)
+        subfolder = ""
+        if pywrap_info.outer_module_name:
+            subfolder = pywrap_info.outer_module_name + "/"
+        final_binary_name = "%s%s%s" % (subfolder, pywrap_info.owner.name, extension)
         final_binary = ctx.actions.declare_file(final_binary_name)
         original_binary_file = original_binary.files.to_list()[0]
         ctx.actions.run_shell(

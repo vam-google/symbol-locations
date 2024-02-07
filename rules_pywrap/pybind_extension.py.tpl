@@ -4,15 +4,16 @@ import re
 
 def __calc_import_path():
   module_name = os.path.basename(__file__)[:-3]
+  outer_module_name = "" # template_val
   for var in ["PYWRAP_TARGET", "TEST_TARGET"]:
     path = __find_pywrap_module_by_target_label(os.environ.get(var))
     if path:
-      return "%s.%s" % (path, module_name)
+      return "%s.%s%s" % (path, outer_module_name, module_name)
 
   for var in ["RUNFILES_MANIFEST_FILE", "RUNFILES_DIR"]:
     path = __find_pywrap_module_by_runfiles_env(os.environ.get(var))
     if path:
-      return "%s.%s" % (path, module_name)
+      return "%s.%s%s" % (path, outer_module_name, module_name)
 
   raise RuntimeError("Could not detect original test/binary location")
 
@@ -38,6 +39,9 @@ def __update_globals(pywrap_m):
     all_names = pywrap_m.__all__
   else:
     all_names = [name for name in dir(pywrap_m) if not name.startswith('_')]
+
+  extra_names = [] # template_val
+  all_names.extend(extra_names)
   globals().update({name: getattr(pywrap_m, name) for name in all_names})
 
 
