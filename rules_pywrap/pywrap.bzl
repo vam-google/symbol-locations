@@ -7,6 +7,7 @@ PywrapInfo = provider(
         "owner": "Owner's label",
         "py_stub": "Pybind Python stub used to resolve cross-package references",
         "outer_module_name": "Outer module name for deduping libraries with the same name",
+        "cc_only": "True if this PywrapInfo represents cc-only library (no PyIni_)"
     }
 )
 
@@ -170,44 +171,6 @@ def pywrap_library(
         compatible_with = compatible_with,
     )
 
-def pybind_extension(
-        name,
-        srcs,
-        deps,
-        private_deps = [],
-        visibility = None,
-        win_def_file = None,
-        testonly = None,
-        compatible_with = None,
-        outer_module_name = "",
-        additional_exported_symbols = [],
-        **kwargs):
-
-    cc_library_name = "_%s_cc_library" % name
-
-    native.cc_library(
-        name = cc_library_name,
-        deps = deps + private_deps + ["@pybind11//:pybind11"],
-        srcs = srcs,
-        linkstatic = True,
-        alwayslink = True,
-        visibility = visibility,
-        testonly = testonly,
-        compatible_with = compatible_with,
-        **kwargs
-    )
-
-    _pywrap_info_wrapper(
-        name = name,
-        deps = ["%s" % cc_library_name],
-        private_deps = private_deps,
-        outer_module_name = outer_module_name,
-        additional_exported_symbols = additional_exported_symbols,
-        testonly = testonly,
-        compatible_with = compatible_with,
-        visibility = visibility,
-    )
-
 def _generated_win_def_file_impl(ctx):
     pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
     pywrap_info = pywrap_infos[ctx.attr.pywrap_index]
@@ -252,18 +215,27 @@ def _pywrap_split_library_impl(ctx):
         pywrap_infos = [pywrap_infos[pywrap_index]]
 
     for pywrap_info in pywrap_infos:
-        cc_info = pywrap_info.cc_info
+        cc_linker_inputs = pywrap_info.cc_info.linking_context.linker_inputs
         # TODO: we should not rely on order of object files in CcInfo
         private_linker_inputs = None
         excluded_linker_inputs = {}
+
+        # pywrap_index >= 0 means we are building small individual _pywrap library
         if pywrap_index >= 0:
-            linker_inputs = cc_info.linking_context.linker_inputs.to_list()[:1]
+            if pywrap_info.cc_only:
+                linker_inputs = []
+            else:
+                linker_inputs = cc_linker_inputs.to_list()[:1]
             if pywrap_info.private_linker_inputs:
                 private_linker_inputs = [
                     depset(direct = pywrap_info.private_linker_inputs.keys())
                 ]
+        # pywrap_index < 0 means we are building big common _pywrap library
         else:
-            linker_inputs = cc_info.linking_context.linker_inputs.to_list()[1:]
+            if pywrap_info.cc_only:
+                linker_inputs = cc_linker_inputs.to_list()
+            else:
+                linker_inputs = cc_linker_inputs.to_list()[1:]
             excluded_linker_inputs = pywrap_info.private_linker_inputs
 
         for linker_input in linker_inputs:
@@ -313,6 +285,53 @@ _pywrap_split_library = rule(
     implementation = _pywrap_split_library_impl,
 )
 
+def pybind_extension(
+        name,
+        deps,
+        srcs = [],
+        private_deps = [],
+        visibility = None,
+        win_def_file = None,
+        testonly = None,
+        compatible_with = None,
+        outer_module_name = "",
+        additional_exported_symbols = [],
+        **kwargs):
+
+    cc_library_name = "_%s_cc_library" % name
+
+    native.cc_library(
+        name = cc_library_name,
+        deps = deps + private_deps + ["@pybind11//:pybind11"],
+        srcs = srcs,
+        linkstatic = True,
+        alwayslink = True,
+        visibility = visibility,
+        testonly = testonly,
+        compatible_with = compatible_with,
+        **kwargs
+    )
+
+    if not srcs:
+        _cc_only_pywrap_info_wrapper(
+            name = name,
+            deps = ["%s" % cc_library_name],
+            testonly = testonly,
+            compatible_with = compatible_with,
+            visibility = visibility,
+        )
+    else:
+        _pywrap_info_wrapper(
+            name = name,
+            deps = ["%s" % cc_library_name],
+            private_deps = private_deps,
+            outer_module_name = outer_module_name,
+            additional_exported_symbols = additional_exported_symbols,
+            testonly = testonly,
+            compatible_with = compatible_with,
+            visibility = visibility,
+        )
+
 def _pywrap_info_wrapper_impl(ctx):
     #the attribute is called deps not dep to match aspect's attr_aspects
     if len(ctx.attr.deps) != 1:
@@ -346,7 +365,6 @@ def _pywrap_info_wrapper_impl(ctx):
             private_linker_inputs[linker_input] = linker_input.owner
 
     return [
-        DefaultInfo(files = depset(direct = [py_stub])),
         PyInfo(transitive_sources = depset()),
         PywrapInfo(
             cc_info = wrapped_dep[CcInfo],
@@ -354,6 +372,7 @@ def _pywrap_info_wrapper_impl(ctx):
             owner = ctx.label,
             py_stub = py_stub,
             outer_module_name = outer_module_name,
+            cc_only = False,
         ),
     ]
 
@@ -369,10 +388,30 @@ _pywrap_info_wrapper = rule(
         "additional_exported_symbols": attr.string_list(
             mandatory = False,
             default = []
-        )
+        ),
     },
-
     implementation = _pywrap_info_wrapper_impl
+)
+
+def _cc_only_pywrap_info_wrapper_impl(ctx):
+    wrapped_dep = ctx.attr.deps[0]
+    return [
+        PyInfo(transitive_sources = depset()),
+        PywrapInfo(
+            cc_info = wrapped_dep[CcInfo],
+            private_linker_inputs = {},
+            owner = ctx.label,
+            py_stub = None,
+            outer_module_name = None,
+            cc_only = True,
+        ),
+    ]
+
+_cc_only_pywrap_info_wrapper = rule(
+    attrs = {
+        "deps": attr.label_list(providers = [CcInfo]),
+    },
+    implementation = _cc_only_pywrap_info_wrapper_impl
 )
 
 def _pywrap_info_collector_aspect_impl(target, ctx):
@@ -431,7 +470,8 @@ def _collected_pywrap_infos_impl(ctx):
 
     py_stubs = []
     for pywrap in pywraps:
-        py_stubs.append(pywrap.py_stub)
+        if pywrap.py_stub:
+            py_stubs.append(pywrap.py_stub)
 
     return [
         DefaultInfo(files = depset(direct = py_stubs)),

@@ -5,6 +5,15 @@ load("//rules_pywrap:pywrap.bzl", "pybind_extension", "pywrap_library")
 # Logic shared between python and regular C++ binaries/test
 #
 cc_library(
+    name = "fourth_library",
+    srcs = ["fourth_library.cc"],
+    deps = [":second_library"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
+    alwayslink = False,
+)
+
+cc_library(
     name = "third_library",
     srcs = ["third_library.cc"],
     hdrs = ["third_library.h"],
@@ -103,7 +112,18 @@ pybind_extension(
     private_deps = [
         ":third_library",
     ],
+    additional_exported_symbols = [
+        "_EXTRA_SYMBOL"
+    ],
     outer_module_name = "sub_pybind",
+    visibility = ["//visibility:public"],
+)
+
+pybind_extension(
+    name = "pybind_cc_only",
+    deps = [
+        "fourth_library",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -130,6 +150,12 @@ py_library(
     deps = [":pybind_copy"],
 )
 
+py_library(
+    name = "py_library_4",
+    srcs = [],
+    deps = [":pybind_cc_only"],
+)
+
 
 pywrap_library(
     name = "pybind_aggregated",
@@ -139,10 +165,12 @@ pywrap_library(
         ":py_library_1",
         ":py_library_2",
         ":py_library_3",
+        ":py_library_4",
 #        ":pybind",
 #        ":pybind_copy",
+#        ":pybind_cc_only",
     ],
-    pywrap_count = 2,
+    pywrap_count = 3,
     visibility = ["//visibility:public"],
 #    generate_common_lib = False,
 )

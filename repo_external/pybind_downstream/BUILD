@@ -7,8 +7,8 @@ pywrap_library(
     deps = [
         "@symbol_locations//pybind:pybind",
         "@symbol_locations//pybind:pybind_copy",
+        "@symbol_locations//pybind:pybind_cc_only",
     ],
-    pywrap_count = 2,
 )
 
 
