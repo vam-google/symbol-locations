@@ -176,9 +176,15 @@ def _generated_win_def_file_impl(ctx):
     pywrap_info = pywrap_infos[ctx.attr.pywrap_index]
     win_def_file_name = "%s.def" % pywrap_info.owner.name
     win_def_file = ctx.actions.declare_file(win_def_file_name)
+
+    if pywrap_info.cc_only:
+        command = "echo \"EXPORTS\r\n\">> {win_def_file}"
+    else:
+        command = "echo \"EXPORTS\r\n  PyInit_{owner}\">> {win_def_file}"
+
     ctx.actions.run_shell(
         inputs = [],
-        command = "echo \"EXPORTS\r\n  PyInit_{owner}\">> {win_def_file}".format(
+        command = command.format(
             owner = pywrap_info.owner.name,
             win_def_file = win_def_file.path
         ),
