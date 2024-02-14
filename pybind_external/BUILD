@@ -1,4 +1,4 @@
-load("//rules_pywrap:pywrap.bzl", "pywrap_library")
+load("//rules_pywrap:pywrap.bzl", "pywrap_library", "pywrap_common_library")
 
 pywrap_library(
     name = "pybind_external_aggregated",
@@ -9,6 +9,11 @@ pywrap_library(
         "//pybind:pybind_copy",
         "//pybind:pybind_cc_only",
     ],
+)
+
+pywrap_common_library(
+    name = "pybind_external_aggregated_common",
+    dep = ":pybind_external_aggregated",
 )
 
 py_test(
