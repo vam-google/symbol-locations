@@ -44,3 +44,15 @@ py_binary(
         ":pybind_external_aggregated",
     ],
 )
+
+py_binary(
+    name = "pybind_pywrap_external_py_binary",
+    srcs = ["pybind_external_py_test.py"],
+    main = "pybind_external_py_test.py",
+    deps = [
+        "//pywrap_external:pywrap_external_aggregated",
+    ],
+    env = {
+        "PYWRAP_TARGET": "//pywrap_external:pywrap_external_aggregated"
+    }
+)
