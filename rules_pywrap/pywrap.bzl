@@ -151,7 +151,7 @@ def pywrap_library(
         compatible_with = compatible_with,
      )
 
-    binaries_data = ["%s" % pywrap_binaries_name] + shared_objects
+    binaries_data = ["%s" % pywrap_binaries_name] + [shared_objects[0]]
     binaries_data.append(":%s" % pywrap_common_cc_binary_name)
 
     native.py_library(
