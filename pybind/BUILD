@@ -1,9 +1,25 @@
-load("//rules_pywrap:pywrap.bzl", "pybind_extension", "pywrap_library")
+load("//rules_pywrap:pywrap.bzl",
+    "pybind_extension",
+    "pywrap_library",
+    "pywrap_common_library",
+    "pywrap_py_common_library"
+)
 #load("//:pywrap_repositories.bzl", "py_test")
 
 #
 # Logic shared between python and regular C++ binaries/test
 #
+cc_library(
+    name = "fifth_library",
+    hdrs = ["fifth_library.h"],
+    srcs = ["fifth_library.cc"],
+    deps = [":second_library"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
+    alwayslink = False,
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "fourth_library",
     srcs = ["fourth_library.cc"],
@@ -17,6 +33,7 @@ cc_library(
     name = "third_library",
     srcs = ["third_library.cc"],
     hdrs = ["third_library.h"],
+    deps = [":second_library"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
@@ -92,6 +109,7 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
+        ":fifth_library",
     ],
     private_deps = [
         ":third_library",
@@ -171,8 +189,21 @@ pywrap_library(
 #        ":pybind_cc_only",
     ],
     pywrap_count = 3,
+    py_cc_deps = [
+        ":fifth_library",
+    ],
     visibility = ["//visibility:public"],
 #    generate_common_lib = False,
+)
+
+pywrap_common_library(
+    name = "pybind_aggregated_common",
+    dep = ":pybind_aggregated"
+)
+
+pywrap_py_common_library(
+    name = "pybind_aggregated_py_common",
+    dep = ":pybind_aggregated"
 )
 
 py_test(
@@ -183,5 +214,33 @@ py_test(
         # not needed, since duplicated, but passed to check that duplication is
         # ok
         "py_library_1"
+    ],
+)
+
+cc_test(
+    name = "common_library_test",
+    srcs = [
+        "common_library_test.cc",
+        "first_library.h",
+        "second_library.h",
+    ],
+    deps = [
+        ":pybind_aggregated_common",
+        "@gtest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "py_common_library_test",
+    srcs = [
+        "py_common_library_test.cc",
+        "first_library.h",
+        "second_library.h",
+        "fifth_library.h",
+    ],
+    deps = [
+        ":pybind_aggregated_common",
+        ":pybind_aggregated_py_common",
+        "@gtest//:gtest_main",
     ],
 )

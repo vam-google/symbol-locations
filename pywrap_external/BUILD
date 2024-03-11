@@ -9,5 +9,9 @@ pywrap_library(
         "//pybind:pybind_copy",
         "//pybind:pybind_cc_only",
     ],
+    py_cc_deps = [
+        "//pybind:fifth_library"
+    ],
+
     visibility = ["//visibility:public"],
 )
