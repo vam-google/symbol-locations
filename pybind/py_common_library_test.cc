@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 
 
-TEST(CommonLibraryTest, CommonLibraryTest) {
+TEST(PyCommonLibraryTest, PyCommonLibraryTest) {
   std::cout << "1: first_func" << std::endl;
   EXPECT_EQ(first_func(1), 2);
   std::cout << "2: second_func" << std::endl;
