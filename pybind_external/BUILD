@@ -3,7 +3,8 @@ load("//rules_pywrap:pywrap.bzl", "pywrap_library", "pywrap_common_library")
 pywrap_library(
     name = "pybind_external_aggregated",
     # Should be generated in final version
-    win_def_file = ":pybind_external_aggregated.def",
+    win_def_file = "//pybind:pybind_aggregated.def",
+    py_cc_win_def_file = "//pybind:py_cc_pybind_aggregated.def",
     deps = [
         "//pybind:pybind",
         "//pybind:pybind_copy",

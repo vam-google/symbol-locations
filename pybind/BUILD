@@ -5,6 +5,8 @@ load("//rules_pywrap:pywrap.bzl",
     "pywrap_py_common_library"
 )
 #load("//:pywrap_repositories.bzl", "py_test")
+exports_files(["pybind_aggregated.def", "py_cc_pybind_aggregated.def"])
+
 
 #
 # Logic shared between python and regular C++ binaries/test
@@ -179,6 +181,7 @@ pywrap_library(
     name = "pybind_aggregated",
     # Should be generated in final version
     win_def_file = ":pybind_aggregated.def",
+    py_cc_win_def_file = ":py_cc_pybind_aggregated.def",
     deps = [
         ":py_library_1",
         ":py_library_2",

@@ -29,6 +29,7 @@ def pywrap_library(
         deps,
         py_cc_deps = [],
         win_def_file = None,
+        py_cc_win_def_file = None,
         pywrap_count = None,
         extra_deps = ["@pybind11//:pybind11"],
         visibility = None,
@@ -95,7 +96,7 @@ def pywrap_library(
         [":%s" % py_common_split_name, ":%s" % common_import_name],
         testonly,
         compatible_with,
-        win_def_file,
+        py_cc_win_def_file,
     )
 
     common_deps = extra_deps + [
@@ -229,6 +230,7 @@ def _pywrap_split_library_impl(ctx):
 
     if mode == "pywrap":
         pw = pywrap_infos[pywrap_index]
+        print("%s matches %s" % (str(pw.owner), ctx.label))
         if not pw.cc_only:
             li = pw.cc_info.linking_context.linker_inputs.to_list()[0]
             split_linker_inputs.append(li)
