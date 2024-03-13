@@ -344,8 +344,8 @@ def _linker_input_filters_impl(ctx):
     for pw in pywrap_infos:
         private_linker_inputs = {}
         for private_dep in pw.private_deps:
-            linker_input = private_dep[CcInfo].linking_context.linker_inputs.to_list()[0]
-            private_linker_inputs[linker_input] = linker_input.owner
+            for linker_input in private_dep[CcInfo].linking_context.linker_inputs.to_list():
+                private_linker_inputs[linker_input] = linker_input.owner
         pywrap_private_linker_inputs.append(private_linker_inputs)
 
     return [

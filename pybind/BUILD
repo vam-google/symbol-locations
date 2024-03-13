@@ -35,7 +35,7 @@ cc_library(
     name = "third_library",
     srcs = ["third_library.cc"],
     hdrs = ["third_library.h"],
-    deps = [":second_library"],
+#    deps = [":second_library"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
