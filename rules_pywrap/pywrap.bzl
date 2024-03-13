@@ -28,6 +28,8 @@ def pywrap_library(
         name,
         deps,
         py_cc_deps = [],
+        linkopts = [],
+        py_cc_linkopts = [],
         win_def_file = None,
         py_cc_win_def_file = None,
         pywrap_count = None,
@@ -74,6 +76,7 @@ def pywrap_library(
     common_import_name = _construct_common_binary(
         common_cc_binary_name,
         [":%s" % common_split_name],
+        linkopts,
         testonly,
         compatible_with,
         win_def_file,
@@ -94,6 +97,7 @@ def pywrap_library(
     common_py_import_name = _construct_common_binary(
         common_py_cc_binary_name,
         [":%s" % py_common_split_name, ":%s" % common_import_name],
+        py_cc_linkopts,
         testonly,
         compatible_with,
         py_cc_win_def_file,
@@ -187,12 +191,19 @@ def pywrap_library(
         compatible_with = compatible_with,
     )
 
-def _construct_common_binary(name, deps, testonly, compatible_with, win_def_file):
+def _construct_common_binary(
+        name,
+        deps,
+        linkopts,
+        testonly,
+        compatible_with,
+        win_def_file):
     native.cc_binary(
         name = name,
         deps = deps,
         linkstatic = True,
         linkshared = True,
+        linkopts = linkopts,
         testonly = testonly,
         compatible_with = compatible_with,
         win_def_file = win_def_file,
