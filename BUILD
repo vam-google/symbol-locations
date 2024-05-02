@@ -13,5 +13,6 @@ test_suite(
         "//pybind:py_common_library_test",
         "//pybind_external:pybind_external_py_test",
         "//pybind_external:pybind_pywrap_external_py_test",
+        "//proto:proto_test",
     ],
 )

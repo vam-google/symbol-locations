@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package proto;
+
+message MyProto {
+  string my_field = 1;
+  bytes my_bytes = 2;
+
+  oneof wow {
+    string my_field_val = 3;
+    bytes my_bytes_val = 4;
+  }
+}
