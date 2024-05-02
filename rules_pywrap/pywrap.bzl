@@ -20,14 +20,17 @@ CollectedPywrapInfo = provider(
 PywrapFilters = provider(
     fields = {
         "py_cc_linker_inputs": "",
+        "cc_linker_inputs" : "",
         "pywrap_private_linker_inputs": "",
+        "proto_linker_inputs": "",
     }
 )
 
 def pywrap_library(
         name,
         deps,
-        py_cc_deps = [],
+        py_cc_deps_filter = [],
+        cc_deps_filter = [],
         linkopts = [],
         py_cc_linkopts = [],
         win_def_file = None,
@@ -58,11 +61,35 @@ def pywrap_library(
     _linker_input_filters(
         name = linker_input_filters_name,
         dep = ":%s" % info_collector_name,
-        py_cc_deps = py_cc_deps,
+        py_cc_deps_filter = py_cc_deps_filter,
+        cc_deps_filter = cc_deps_filter,
     )
 
+    # _protobuf binary
+    proto_split_name = "_%s_proto_split" % name
+    _pywrap_split_library(
+        name = proto_split_name,
+        mode = "proto",
+        dep = ":%s" % info_collector_name,
+        linker_input_filters = "%s" % linker_input_filters_name,
+        testonly = testonly,
+        compatible_with = compatible_with,
+    )
+
+    proto_cc_binary_name = "%s_proto_internal" % name
+    proto_import_name = _construct_common_binary(
+        proto_cc_binary_name,
+        [":%s" % proto_split_name],
+        linkopts,
+        testonly,
+        compatible_with,
+        None,
+        None,
+    )
+
+
     # _internal binary
-    common_split_name = "_%s_common_split" % name
+    common_split_name = "_%s_split" % name
     _pywrap_split_library(
         name = common_split_name,
         mode = "cc_common",
@@ -75,15 +102,16 @@ def pywrap_library(
     common_cc_binary_name = "%s_internal" % name
     common_import_name = _construct_common_binary(
         common_cc_binary_name,
-        [":%s" % common_split_name],
+        [":%s" % common_split_name, ":%s" % proto_import_name],
         linkopts,
         testonly,
         compatible_with,
         win_def_file,
+        ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
     )
 
     # _py_internal binary
-    py_common_split_name = "_%s_py_common_split" % name
+    py_common_split_name = "_%s_py_split" % name
     _pywrap_split_library(
         name = py_common_split_name,
         mode = "py_common",
@@ -96,18 +124,26 @@ def pywrap_library(
     common_py_cc_binary_name = "%s_py_internal" % name
     common_py_import_name = _construct_common_binary(
         common_py_cc_binary_name,
-        [":%s" % py_common_split_name, ":%s" % common_import_name],
+        [
+            ":%s" % py_common_split_name,
+            ":%s" % common_import_name,
+            ":%s" % proto_import_name,
+            "@pybind11//:pybind11"
+        ],
         py_cc_linkopts,
         testonly,
         compatible_with,
         py_cc_win_def_file,
+        None,
     )
 
     common_deps = extra_deps + [
+        ":%s" % proto_import_name,
         ":%s" % common_import_name,
         ":%s" % common_py_import_name,
     ]
     binaries_data = [
+        ":%s" % proto_cc_binary_name,
         ":%s" % common_cc_binary_name,
         ":%s" % common_py_cc_binary_name,
     ]
@@ -150,6 +186,7 @@ def pywrap_library(
             win_def_file = ":%s" % win_def_name,
             testonly = testonly,
             compatible_with = compatible_with,
+            local_defines = ["PROTOBUF_USE_DLLS"],
         )
         shared_objects.append(":%s" % shared_object_name)
 
@@ -197,7 +234,9 @@ def _construct_common_binary(
         linkopts,
         testonly,
         compatible_with,
-        win_def_file):
+        win_def_file,
+        local_defines):
+
     native.cc_binary(
         name = name,
         deps = deps,
@@ -207,6 +246,7 @@ def _construct_common_binary(
         testonly = testonly,
         compatible_with = compatible_with,
         win_def_file = win_def_file,
+        local_defines = local_defines,
     )
 
     if_lib_name = "%s_if_lib" % name
@@ -252,10 +292,14 @@ def _pywrap_split_library_impl(ctx):
         for i in range(0, len(pywrap_infos)):
             pw = pywrap_infos[i]
             pw_private_linker_inputs = filters.pywrap_private_linker_inputs[i]
-            for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
+            pw_lis = pw.cc_info.linking_context.linker_inputs.to_list()[1:]
+            for li in pw_lis:
                 if li in pw_private_linker_inputs:
                     continue
-                if li in py_cc_linker_inputs:
+                if li in filters.proto_linker_inputs:
+                    if mode == "proto":
+                        split_linker_inputs.append(li)
+                elif li in filters.py_cc_linker_inputs:
                     if mode == "py_common":
                         split_linker_inputs.append(li)
                 else:
@@ -294,7 +338,7 @@ _pywrap_split_library = rule(
         "pywrap_index": attr.int(mandatory = False, default = -1),
         "mode": attr.string(
             mandatory = True,
-            values = ["pywrap", "cc_common", "py_common"]
+            values = ["pywrap", "cc_common", "py_common", "proto"]
         ),
         "_cc_toolchain": attr.label(
             default = "@bazel_tools//tools/cpp:current_cc_toolchain",
@@ -334,24 +378,48 @@ def _construct_dependency_libraries(ctx, split_linker_inputs):
 
 def _linker_input_filters_impl(ctx):
     py_cc_linker_inputs = {}
-    for py_cc_dep in ctx.attr.py_cc_deps:
-        li = py_cc_dep[CcInfo].linking_context.linker_inputs.to_list()[0]
-        py_cc_linker_inputs[li] = li.owner
+    for py_cc_dep in ctx.attr.py_cc_deps_filter:
+        for li in py_cc_dep[CcInfo].linking_context.linker_inputs.to_list()[:1]:
+            py_cc_linker_inputs[li] = li.owner
+
+    cc_linker_inputs = {}
+    for cc_dep in ctx.attr.cc_deps_filter:
+        for li in cc_dep[CcInfo].linking_context.linker_inputs.to_list()[:1]:
+            cc_linker_inputs[li] = li.owner
 
     pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
     pywrap_private_linker_inputs = []
 
+    proto_linker_inputs = {}
     for pw in pywrap_infos:
         private_linker_inputs = {}
+
+        for li in pw.cc_info.linking_context.linker_inputs.to_list():
+            proto_lib = None
+            for lib in li.libraries:
+                for obj in lib.objects:
+                    bn = obj.basename
+                    if (bn.endswith(".pb.o") or bn.endswith(".pb.obj")) and not obj.is_source:
+                        proto_lib = True
+                    else:
+                        proto_lib = False
+                        break;
+                if proto_lib == False:
+                    break;
+            if proto_lib:
+                proto_linker_inputs[li] = li.owner
+
         for private_dep in pw.private_deps:
-            for linker_input in private_dep[CcInfo].linking_context.linker_inputs.to_list():
-                private_linker_inputs[linker_input] = linker_input.owner
+            for priv_li in private_dep[CcInfo].linking_context.linker_inputs.to_list():
+                if (priv_li not in py_cc_linker_inputs) and (priv_li not in cc_linker_inputs):
+                    private_linker_inputs[priv_li] = priv_li.owner
         pywrap_private_linker_inputs.append(private_linker_inputs)
 
     return [
         PywrapFilters(
             py_cc_linker_inputs = py_cc_linker_inputs,
-            pywrap_private_linker_inputs = pywrap_private_linker_inputs
+            pywrap_private_linker_inputs = pywrap_private_linker_inputs,
+            proto_linker_inputs = proto_linker_inputs,
         )
     ]
 
@@ -361,7 +429,13 @@ _linker_input_filters = rule(
             allow_files = False,
             providers = [CollectedPywrapInfo],
         ),
-        "py_cc_deps": attr.label_list(
+        "py_cc_deps_filter": attr.label_list(
+            allow_files = False,
+            providers = [CcInfo],
+            mandatory = False,
+            default = [],
+        ),
+        "cc_deps_filter": attr.label_list(
             allow_files = False,
             providers = [CcInfo],
             mandatory = False,
@@ -370,6 +444,12 @@ _linker_input_filters = rule(
     },
     implementation = _linker_input_filters_impl,
 )
+
+def pywrap_proto_library(name, dep):
+    native.alias(
+        name = name,
+        actual = "%s_proto_internal_import" % dep,
+    )
 
 def pywrap_common_library(name, dep):
     native.alias(
@@ -441,6 +521,7 @@ def pybind_extension(
         visibility = visibility,
         testonly = testonly,
         compatible_with = compatible_with,
+        local_defines = ["PROTOBUF_USE_DLLS"],
         **kwargs
     )
 
@@ -466,6 +547,7 @@ def pybind_extension(
 
 def _pywrap_info_wrapper_impl(ctx):
     #the attribute is called deps not dep to match aspect's attr_aspects
+
     if len(ctx.attr.deps) != 1:
         fail("deps attribute must contain exactly one dependency")
 

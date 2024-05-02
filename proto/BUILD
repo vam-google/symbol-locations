@@ -31,7 +31,8 @@ cc_library(
         "@com_google_protobuf//:protobuf",
     ],
     alwayslink = True,
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"]
+    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -40,7 +41,8 @@ cc_library(
     deps = [
         "@com_google_protobuf//:protobuf_headers",
     ],
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"]
+    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
+    visibility = ["//visibility:public"],
 )
 
 cc_binary(
@@ -51,7 +53,7 @@ cc_binary(
     linkshared = True,
     linkstatic = True,
 #    win_def_file = "my_proto.def",
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"]
+    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
 )
 
 filegroup(

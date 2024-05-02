@@ -10,7 +10,7 @@ pywrap_library(
         "//pybind:pybind_copy",
         "//pybind:pybind_cc_only",
     ],
-    py_cc_deps = [
+    py_cc_deps_filter = [
         "//pybind:fifth_library"
     ],
 )

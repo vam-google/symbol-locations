@@ -1,6 +1,7 @@
 load("//rules_pywrap:pywrap.bzl",
     "pybind_extension",
     "pywrap_library",
+    "pywrap_proto_library",
     "pywrap_common_library",
     "pywrap_py_common_library"
 )
@@ -128,6 +129,8 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
+        "@com_google_protobuf//:protobuf",
+        "//proto:my_proto_cc_library",
     ],
     private_deps = [
         ":third_library",
@@ -192,11 +195,16 @@ pywrap_library(
 #        ":pybind_cc_only",
     ],
     pywrap_count = 3,
-    py_cc_deps = [
+    py_cc_deps_filter = [
         ":fifth_library",
     ],
     visibility = ["//visibility:public"],
 #    generate_common_lib = False,
+)
+
+pywrap_proto_library(
+    name = "pybind_aggregated_proto",
+    dep = ":pybind_aggregated"
 )
 
 pywrap_common_library(
@@ -228,6 +236,7 @@ cc_test(
         "second_library.h",
     ],
     deps = [
+        ":pybind_aggregated_proto",
         ":pybind_aggregated_common",
         "@gtest//:gtest_main",
     ],
@@ -242,6 +251,7 @@ cc_test(
         "fifth_library.h",
     ],
     deps = [
+        ":pybind_aggregated_proto",
         ":pybind_aggregated_common",
         ":pybind_aggregated_py_common",
         "@gtest//:gtest_main",
