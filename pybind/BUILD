@@ -128,8 +128,6 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
-        "@com_google_protobuf//:protobuf",
-        "//proto:my_proto_cc_library",
     ],
     private_deps = [
         ":third_library",
