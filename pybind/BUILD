@@ -1,7 +1,6 @@
 load("//rules_pywrap:pywrap.bzl",
     "pybind_extension",
     "pywrap_library",
-    "pywrap_proto_library",
     "pywrap_common_library",
     "pywrap_py_common_library"
 )
@@ -202,11 +201,6 @@ pywrap_library(
 #    generate_common_lib = False,
 )
 
-pywrap_proto_library(
-    name = "pybind_aggregated_proto",
-    dep = ":pybind_aggregated"
-)
-
 pywrap_common_library(
     name = "pybind_aggregated_common",
     dep = ":pybind_aggregated"
@@ -236,7 +230,6 @@ cc_test(
         "second_library.h",
     ],
     deps = [
-        ":pybind_aggregated_proto",
         ":pybind_aggregated_common",
         "@gtest//:gtest_main",
     ],
@@ -251,7 +244,6 @@ cc_test(
         "fifth_library.h",
     ],
     deps = [
-        ":pybind_aggregated_proto",
         ":pybind_aggregated_common",
         ":pybind_aggregated_py_common",
         "@gtest//:gtest_main",

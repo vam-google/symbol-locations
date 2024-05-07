@@ -11,49 +11,36 @@ cc_proto_library(
     deps = [":my_proto_proto"],
 )
 
-proto_srcs(
-    name = "my_proto_srcs",
-    deps = [":my_proto_library"],
-    extension = "cc",
-)
-
-proto_srcs(
-    name = "my_proto_hdrs",
-    deps = [":my_proto_library"],
-    extension = "h",
-)
-
 cc_library(
     name = "my_proto_cc_library",
-    hdrs = [":my_proto_hdrs"],
-    srcs = [":my_proto_srcs"],
+    srcs = [
+        "my_proto_symbols.cc"
+    ],
     deps = [
-        "@com_google_protobuf//:protobuf",
+        ":my_proto_library",
     ],
     alwayslink = True,
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "my_proto_cc_library_headers",
-    hdrs = [":my_proto_hdrs"],
+    hdrs = [":my_proto_library"],
     deps = [
         "@com_google_protobuf//:protobuf_headers",
     ],
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
     visibility = ["//visibility:public"],
 )
 
 cc_binary(
     name = "my_proto_cc_binary",
     deps = [
-        "my_proto_cc_library",
+        ":my_proto_cc_library",
+        "@com_google_protobuf//:protobuf",
     ],
     linkshared = True,
     linkstatic = True,
-#    win_def_file = "my_proto.def",
-    local_defines = ["PROTOBUF_USE_DLLS", "LIBPROTOBUF_EXPORTS"],
+    win_def_file = "my_proto.def",
 )
 
 filegroup(
