@@ -23,7 +23,6 @@ cc_binary(
     name = "absl_check_cc_binary",
     deps = [
         ":absl_check_cc_library",
-        "@com_google_protobuf//:protobuf",
     ],
     linkshared = True,
     linkstatic = True,
