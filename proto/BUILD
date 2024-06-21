@@ -1,5 +1,3 @@
-load("//rules_pywrap:pywrap.bzl", "stripped_cc_info")
-
 proto_library(
     name = "my_proto_proto",
     srcs = ["my_proto.proto"],

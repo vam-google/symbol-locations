@@ -1,3 +1,5 @@
+load("//absl:absl_check.bzl", "cc_header_only_library")
+
 cc_library(
     name = "absl_check_cc_library",
     srcs = [
@@ -13,10 +15,17 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+#cc_library(
+#    name = "absl_check_cc_library_headers",
+#    hdrs = ["absl_check.h"],
+#    visibility = ["//visibility:public"],
+#)
+
+cc_header_only_library(
     name = "absl_check_cc_library_headers",
-    hdrs = ["absl_check.h"],
-    visibility = ["//visibility:public"],
+    deps = [
+        ":absl_check_cc_library",
+    ],
 )
 
 cc_binary(
@@ -48,8 +57,8 @@ cc_test(
         "@gtest//:gtest_main",
         ":absl_check_cc_library_headers",
         ":absl_check_cc_import",
-        "@com_google_absl//absl/container:flat_hash_map",
+#        "@com_google_absl//absl/container:flat_hash_map",
     ],
-#    local_defines = ["ABSL_CONSUME_DLL"],
+    local_defines = ["ABSL_CONSUME_DLL"],
 #    linkstatic = False,
 )
