@@ -19,15 +19,15 @@ int main() {
   std::cout << "sizeof(int64_t): " << sizeof(int64_t) << std::endl;
   std::cout << "sizeof(intptr_t): " << sizeof(intptr_t) << std::endl;
 
-  std::vector<intptr_t> factorIndices;
-  factorIndices.push_back(123L);
-  factorIndices.push_back(456L);
-  foo(factorIndices.data());
+//  std::vector<intptr_t> factorIndices;
+//  factorIndices.push_back(123L);
+//  factorIndices.push_back(456L);
+//  foo(factorIndices.data());
 
   std::vector<int64_t> factorIndices1;
   factorIndices1.push_back(1230L);
   factorIndices1.push_back(4560L);
-  foo1(factorIndices1.data());
+  foo1(static_cast<const intptr_t*>(factorIndices1.data()));
 
 
   return 0;
