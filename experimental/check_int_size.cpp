@@ -22,7 +22,7 @@ int main() {
   std::cout << "std::is_same_v<int64_t, long>: " << std::is_same_v<int64_t, long> << std::endl;
   std::cout << "std::is_same_v<int64_t, long long>: " << std::is_same_v<int64_t, long long> << std::endl;
   std::cout << "std::is_same_v<intptr_t, long>: " << std::is_same_v<intptr_t, long> << std::endl;
-  std::cout << "std::is_same_v<intptr_t, long>: " << std::is_same_v<intptr_t, long long> << std::endl;
+  std::cout << "std::is_same_v<intptr_t, long long>: " << std::is_same_v<intptr_t, long long> << std::endl;
 
 
 
