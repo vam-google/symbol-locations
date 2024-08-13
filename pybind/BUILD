@@ -247,5 +247,3 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
-
-# test change
