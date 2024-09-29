@@ -1,8 +1,7 @@
 EXPORTS
-  ??0MyProto@proto@@QEAA@XZ
   ??1MyProto@proto@@UEAA@XZ
-  ?GetDescriptor@MyProto@proto@@SAPEBVDescriptor@protobuf@google@@XZ
-  ?default_instance@MyProto@proto@@SAAEBV12@XZ
   ?New@MyProto@proto@@UEBAPEAV12@PEAVArena@protobuf@google@@@Z
   ?clear_wow@MyProto@proto@@QEAAXXZ
-  ?my_bytes_val@MyProto@proto@@QEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
+  ?_MyProto_default_instance_@proto@@3UMyProtoDefaultTypeInternal@1@A
+  ??0MyProto@proto@@IEAA@PEAVArena@protobuf@google@@_N@Z
+  ?GetMetadata@MyProto@proto@@UEBA?AUMetadata@protobuf@google@@XZ

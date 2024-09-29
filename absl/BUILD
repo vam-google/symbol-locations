@@ -12,6 +12,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
     ],
     alwayslink = True,
+    local_defines = ["ABSL_BUILD_DLL"],
     visibility = ["//visibility:public"],
 )
 
