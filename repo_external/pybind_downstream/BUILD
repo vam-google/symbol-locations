@@ -27,7 +27,4 @@ py_test(
     deps = [
         "@symbol_locations//pywrap_external:pywrap_external_aggregated",
     ],
-    env = {
-        "PYWRAP_TARGET": "@symbol_locations//pywrap_external:pywrap_external_aggregated"
-    }
 )

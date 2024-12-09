@@ -35,9 +35,6 @@ py_test(
     deps = [
         "//pywrap_external:pywrap_external_aggregated",
     ],
-    env = {
-        "PYWRAP_TARGET": "//pywrap_external:pywrap_external_aggregated"
-    }
 )
 
 py_binary(
@@ -56,7 +53,4 @@ py_binary(
     deps = [
         "//pywrap_external:pywrap_external_aggregated",
     ],
-    env = {
-        "PYWRAP_TARGET": "//pywrap_external:pywrap_external_aggregated"
-    }
 )

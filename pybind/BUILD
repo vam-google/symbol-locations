@@ -2,7 +2,8 @@ load("//rules_pywrap:pywrap.bzl",
     "pybind_extension",
     "pywrap_library",
     "pywrap_common_library",
-    "pywrap_py_common_library"
+    "pywrap_py_common_library",
+    "pywrap_binaries",
 )
 #load("//:pywrap_repositories.bzl", "py_test")
 exports_files(["pybind_aggregated.def", "py_cc_pybind_aggregated.def"])
@@ -119,6 +120,11 @@ pybind_extension(
     additional_exported_symbols = [
         "_EXTRA_SYMBOL"
     ],
+    common_lib_packages = [
+        "pywrap_external/python",  # non-existent package to test that its Ok
+        "pybind_external",
+        "pywrap_external",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -135,7 +141,7 @@ pybind_extension(
     additional_exported_symbols = [
         "_EXTRA_SYMBOL"
     ],
-    outer_module_name = "sub_pybind",
+    common_lib_packages = ["pywrap_external", "pybind_external"],
     visibility = ["//visibility:public"],
 )
 
@@ -209,6 +215,11 @@ pywrap_py_common_library(
     dep = ":pybind_aggregated"
 )
 
+pywrap_binaries(
+    name = "pybind_aggregated_binaries",
+    dep = ":pybind_aggregated",
+)
+
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
@@ -247,3 +258,4 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
+
