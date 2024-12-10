@@ -259,9 +259,9 @@ def _pywrap_split_library_impl(ctx):
     if mode == "pywrap":
         pw = pywrap_infos[pywrap_index]
         # print("%s matches %s" % (str(pw.owner), ctx.label))
+        li = pw.cc_info.linking_context.linker_inputs.to_list()[0]
+        user_link_flags.extend(li.user_link_flags)
         if not pw.cc_only:
-            li = pw.cc_info.linking_context.linker_inputs.to_list()[0]
-            user_link_flags.extend(li.user_link_flags)
             split_linker_inputs.append(li)
             private_linker_inputs = [
                 depset(direct = filters.pywrap_private_linker_inputs[pywrap_index].keys()),
@@ -733,11 +733,14 @@ def _pywrap_binaries_impl(ctx):
 
         final_binaries.append(final_binary)
 
-        final_binary_location = "{root}{new_package}/{basename}".format(
-            root = final_binary.path.split(final_binary.short_path, 1)[0],
-            new_package = pywrap_info.owner.package,
-            basename = final_binary.basename,
-        )
+        final_binary_location = ""
+        if not pywrap_info.cc_only:
+            final_binary_location = "{root}{new_package}/{basename}".format(
+                root = final_binary.path.split(final_binary.short_path, 1)[0],
+                new_package = pywrap_info.owner.package,
+                basename = final_binary.basename,
+            )
+
         wheel_locations[final_binary.path] = final_binary_location
         if pywrap_info.py_stub:
             wheel_locations[pywrap_info.py_stub.path] = ""
