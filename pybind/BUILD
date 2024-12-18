@@ -2,7 +2,6 @@ load("//rules_pywrap:pywrap.bzl",
     "pybind_extension",
     "pywrap_library",
     "pywrap_common_library",
-    "pywrap_py_common_library",
     "pywrap_binaries",
 )
 #load("//:pywrap_repositories.bzl", "py_test")
@@ -187,7 +186,6 @@ pywrap_library(
     name = "pybind_aggregated",
     # Should be generated in final version
     win_def_file = ":pybind_aggregated.def",
-    py_cc_win_def_file = ":py_cc_pybind_aggregated.def",
     deps = [
         ":py_library_1",
         ":py_library_2",
@@ -198,20 +196,11 @@ pywrap_library(
 #        ":pybind_cc_only",
     ],
     pywrap_count = 3,
-    py_cc_deps_filter = [
-        ":fifth_library",
-    ],
     visibility = ["//visibility:public"],
-#    generate_common_lib = False,
 )
 
 pywrap_common_library(
     name = "pybind_aggregated_common",
-    dep = ":pybind_aggregated"
-)
-
-pywrap_py_common_library(
-    name = "pybind_aggregated_py_common",
     dep = ":pybind_aggregated"
 )
 
@@ -254,7 +243,6 @@ cc_test(
     ],
     deps = [
         ":pybind_aggregated_common",
-        ":pybind_aggregated_py_common",
         "@gtest//:gtest_main",
     ],
 )

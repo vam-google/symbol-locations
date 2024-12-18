@@ -3,3 +3,4 @@ EXPORTS
   ?first_func@@YAHH@Z
   ?second_global_func@@YAHXZ
   ?second_global@@3HA DATA
+  ?fifth_func@@YAHXZ
