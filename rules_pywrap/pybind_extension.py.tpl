@@ -16,7 +16,7 @@ def __try_import():
       pywrap_m = __import__(import_path, fromlist=["*"])
       __update_globals(pywrap_m)
       return
-    except ImportError:
+    except ImportError as e:
       # try another packge if there are any left
       pass
 

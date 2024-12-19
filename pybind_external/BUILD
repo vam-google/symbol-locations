@@ -9,6 +9,7 @@ pywrap_library(
         "//pybind:pybind_copy",
         "//pybind:pybind_cc_only",
     ],
+    pywrap_lib_filter = "//pybind:third_library",
 )
 
 pywrap_common_library(

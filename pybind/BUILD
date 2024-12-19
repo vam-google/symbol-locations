@@ -39,6 +39,7 @@ cc_library(
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -112,8 +113,6 @@ pybind_extension(
         ":first_library",
         ":second_library",
         ":fifth_library",
-    ],
-    private_deps = [
         ":third_library",
     ],
     additional_exported_symbols = [
@@ -133,8 +132,6 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
-    ],
-    private_deps = [
         ":third_library",
     ],
     additional_exported_symbols = [
@@ -195,13 +192,23 @@ pywrap_library(
 #        ":pybind_copy",
 #        ":pybind_cc_only",
     ],
+    common_lib_filters = {
+        ":fifth_library": "framework",
+    },
+    pywrap_lib_filter = ":third_library",
     pywrap_count = 3,
     visibility = ["//visibility:public"],
 )
 
 pywrap_common_library(
-    name = "pybind_aggregated_common",
+    name = "common_pybind_aggregated_internal",
     dep = ":pybind_aggregated"
+)
+
+pywrap_common_library(
+    name = "common_pybind_aggregated_framework",
+    dep = ":pybind_aggregated",
+    filter_name = "framework"
 )
 
 pywrap_binaries(
@@ -228,7 +235,7 @@ cc_test(
         "second_library.h",
     ],
     deps = [
-        ":pybind_aggregated_common",
+        ":common_pybind_aggregated_framework",
         "@gtest//:gtest_main",
     ],
 )
@@ -242,7 +249,8 @@ cc_test(
         "fifth_library.h",
     ],
     deps = [
-        ":pybind_aggregated_common",
+        ":common_pybind_aggregated_framework",
+        ":common_pybind_aggregated_internal",
         "@gtest//:gtest_main",
     ],
 )

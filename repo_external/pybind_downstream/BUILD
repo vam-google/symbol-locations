@@ -9,6 +9,7 @@ pywrap_library(
         "@symbol_locations//pybind:pybind_copy",
         "@symbol_locations//pybind:pybind_cc_only",
     ],
+    pywrap_lib_filter = "//pybind:third_library",
 )
 
 
