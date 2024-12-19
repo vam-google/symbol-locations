@@ -61,9 +61,8 @@ def pywrap_library(
 
     # _internal binary
     common_split_name = "_%s_split" % name
-    _pywrap_split_library(
+    _pywrap_common_split_library(
         name = common_split_name,
-        mode = "cc_common",
         dep = ":%s" % info_collector_name,
         linker_input_filters = "%s" % linker_input_filters_name,
         testonly = testonly,
@@ -101,7 +100,6 @@ def pywrap_library(
 
         _pywrap_split_library(
             name = pywrap_name,
-            mode = "pywrap",
             dep = ":%s" % info_collector_name,
             linker_input_filters = "%s" % linker_input_filters_name,
             pywrap_index = pywrap_index,
@@ -215,35 +213,88 @@ def _construct_common_binary(
 
 def _pywrap_split_library_impl(ctx):
     pywrap_index = ctx.attr.pywrap_index
-    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    pw = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()[pywrap_index]
+    li = pw.cc_info.linking_context.linker_inputs.to_list()[0]
+
     split_linker_inputs = []
     private_linker_inputs = []
+    if not pw.cc_only:
+        split_linker_inputs.append(li)
+        filters = ctx.attr.linker_input_filters[PywrapFilters]
+        private_linker_inputs = [
+            depset(direct = filters.pywrap_private_linker_inputs[pywrap_index].keys()),
+        ]
 
-    mode = ctx.attr.mode
+    return _construct_split_library_cc_info(
+        ctx,
+        split_linker_inputs,
+        li.user_link_flags,
+        private_linker_inputs
+    )
+
+_pywrap_split_library = rule(
+    attrs = {
+        "dep": attr.label(
+            allow_files = False,
+            providers = [CollectedPywrapInfo],
+        ),
+        # py_deps, meaning C++ deps which depend on Python symbols
+        "linker_input_filters": attr.label(
+            allow_files = False,
+            providers = [PywrapFilters],
+            mandatory = True,
+        ),
+        "pywrap_index": attr.int(mandatory = False, default = -1),
+        "_cc_toolchain": attr.label(
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+        ),
+    },
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
+    implementation = _pywrap_split_library_impl,
+)
+
+def _pywrap_common_split_library_impl(ctx):
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    split_linker_inputs = []
+
     filters = ctx.attr.linker_input_filters[PywrapFilters]
-    user_link_flags = []
-
-    if mode == "pywrap":
-        pw = pywrap_infos[pywrap_index]
-
-        # print("%s matches %s" % (str(pw.owner), ctx.label))
-        li = pw.cc_info.linking_context.linker_inputs.to_list()[0]
-        user_link_flags.extend(li.user_link_flags)
-        if not pw.cc_only:
+    for i in range(0, len(pywrap_infos)):
+        pw = pywrap_infos[i]
+        pw_private_linker_inputs = filters.pywrap_private_linker_inputs[i]
+        pw_lis = pw.cc_info.linking_context.linker_inputs.to_list()[1:]
+        for li in pw_lis:
+            if li in pw_private_linker_inputs:
+                continue
             split_linker_inputs.append(li)
-            private_linker_inputs = [
-                depset(direct = filters.pywrap_private_linker_inputs[pywrap_index].keys()),
-            ]
-    else:
-        for i in range(0, len(pywrap_infos)):
-            pw = pywrap_infos[i]
-            pw_private_linker_inputs = filters.pywrap_private_linker_inputs[i]
-            pw_lis = pw.cc_info.linking_context.linker_inputs.to_list()[1:]
-            for li in pw_lis:
-                if li in pw_private_linker_inputs:
-                    continue
-                split_linker_inputs.append(li)
 
+    return _construct_split_library_cc_info(ctx, split_linker_inputs, [], [])
+
+_pywrap_common_split_library = rule(
+    attrs = {
+        "dep": attr.label(
+            allow_files = False,
+            providers = [CollectedPywrapInfo],
+        ),
+        "linker_input_filters": attr.label(
+            allow_files = False,
+            providers = [PywrapFilters],
+            mandatory = True,
+        ),
+        "_cc_toolchain": attr.label(
+            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
+        ),
+    },
+    fragments = ["cpp"],
+    toolchains = use_cpp_toolchain(),
+    implementation = _pywrap_common_split_library_impl,
+)
+
+def _construct_split_library_cc_info(
+        ctx,
+        split_linker_inputs,
+        user_link_flags,
+        private_linker_inputs):
     dependency_libraries = _construct_dependency_libraries(
         ctx,
         split_linker_inputs,
@@ -263,34 +314,6 @@ def _pywrap_split_library_impl(ctx):
     )
 
     return [CcInfo(linking_context = linking_context)]
-
-_pywrap_split_library = rule(
-    attrs = {
-        "dep": attr.label(
-            allow_files = False,
-            providers = [CollectedPywrapInfo],
-        ),
-        # py_deps, meaning C++ deps which depend on Python symbols
-        "linker_input_filters": attr.label(
-            allow_files = False,
-            providers = [PywrapFilters],
-            mandatory = True,
-        ),
-        "pywrap_index": attr.int(mandatory = False, default = -1),
-        "mode": attr.string(
-            mandatory = True,
-            values = ["pywrap", "cc_common", "py_common"],
-        ),
-        "_cc_toolchain": attr.label(
-            default = "@bazel_tools//tools/cpp:current_cc_toolchain",
-        ),
-    },
-    fragments = ["cpp"],
-    toolchains = use_cpp_toolchain(),
-    implementation = _pywrap_split_library_impl,
-)
-
-
 
 def _construct_dependency_libraries(ctx, split_linker_inputs):
     cc_toolchain = find_cpp_toolchain(ctx)
