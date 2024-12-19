@@ -193,7 +193,8 @@ pywrap_library(
 #        ":pybind_cc_only",
     ],
     common_lib_filters = {
-        ":fifth_library": "framework",
+        ":fifth_library": "libframework.so.2",
+#        ":fifth_library": "framework",
     },
     pywrap_lib_filter = ":third_library",
     pywrap_count = 3,
@@ -208,7 +209,7 @@ pywrap_common_library(
 pywrap_common_library(
     name = "common_pybind_aggregated_framework",
     dep = ":pybind_aggregated",
-    filter_name = "framework"
+    filter_name = "libframework.so.2"
 )
 
 pywrap_binaries(

@@ -181,6 +181,10 @@ def _construct_common_binary(
         compatible_with,
         win_def_file,
         local_defines):
+    soname = name if name.startswith("lib") else ("lib%s" % name)
+    if ".so" not in name:
+        soname += ".so"
+
     native.cc_binary(
         name = name,
         deps = deps,
@@ -189,7 +193,7 @@ def _construct_common_binary(
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
             "//conditions:default": [
-                "-Wl,-soname,lib%s.so" % name,
+                "-Wl,-soname,%s" % soname,
                 "-Wl,-rpath='$$ORIGIN'",
             ],
         }),
@@ -212,7 +216,7 @@ def _construct_common_binary(
     native.cc_import(
         name = import_name,
         shared_library = ":%s" % name,
-        interface_library = ":%s" % if_lib_name,
+#        interface_library = ":%s" % if_lib_name,
         testonly = testonly,
         compatible_with = compatible_with,
     )
