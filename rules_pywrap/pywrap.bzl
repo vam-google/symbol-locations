@@ -216,6 +216,7 @@ def _construct_common_binary(
     native.cc_import(
         name = import_name,
         shared_library = ":%s" % name,
+        # TODO: put it back to fix Windows
 #        interface_library = ":%s" % if_lib_name,
         testonly = testonly,
         compatible_with = compatible_with,
