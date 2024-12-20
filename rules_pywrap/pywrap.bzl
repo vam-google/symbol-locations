@@ -19,6 +19,7 @@ CollectedPywrapInfo = provider(
 PywrapFilters = provider(
     fields = {
         "pywrap_lib_filter": "",
+        "pywrap_lib_exclusion_filter": "",
         "common_lib_filters": "",
     },
 )
@@ -27,6 +28,7 @@ def pywrap_library(
         name,
         deps,
         pywrap_lib_filter = None,
+        pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
         linkopts = [],
         win_def_file = None,
@@ -56,6 +58,7 @@ def pywrap_library(
         name = linker_input_filters_name,
         dep = ":%s" % info_collector_name,
         pywrap_lib_filter = pywrap_lib_filter,
+        pywrap_lib_exclusion_filter = pywrap_lib_exclusion_filter,
         common_lib_filters = common_lib_filters,
     )
 
@@ -279,7 +282,7 @@ def _pywrap_common_split_library_impl(ctx):
     filters = ctx.attr.linker_input_filters[PywrapFilters]
 
     libs_to_exclude = {}
-    libs_to_exclude.update(filters.pywrap_lib_filter)
+#    libs_to_exclude.update(filters.pywrap_lib_filter)
     libs_to_include = {}
     include_all_not_excluded = False
 
@@ -374,12 +377,17 @@ def _construct_dependency_libraries(ctx, split_linker_inputs):
     return dependency_libraries
 
 def _linker_input_filters_impl(ctx):
+    pywrap_lib_exclusion_filter = {}
     pywrap_lib_filter = {}
     visited_filters = {}
+    if ctx.attr.pywrap_lib_exclusion_filter:
+        for li in ctx.attr.pywrap_lib_exclusion_filter[CcInfo].linking_context.linker_inputs.to_list():
+            pywrap_lib_exclusion_filter[li] = li.owner
+
     if ctx.attr.pywrap_lib_filter:
         for li in ctx.attr.pywrap_lib_filter[CcInfo].linking_context.linker_inputs.to_list():
-            pywrap_lib_filter[li] = True
-            visited_filters[li] = True
+            if li not in pywrap_lib_exclusion_filter:
+                pywrap_lib_filter[li] = li.owner
 
     common_lib_filters = {k: {} for k in ctx.attr.common_lib_filters.values()}
 
@@ -387,8 +395,8 @@ def _linker_input_filters_impl(ctx):
         filter_li = filter[CcInfo].linking_context.linker_inputs.to_list()
         for li in filter_li:
             if li not in visited_filters:
-                common_lib_filters[name][li] = True
-                visited_filters[li] = True
+                common_lib_filters[name][li] = li.owner
+                visited_filters[li] = li.owner
 
     return [
         PywrapFilters(
@@ -404,6 +412,11 @@ _linker_input_filters = rule(
             providers = [CollectedPywrapInfo],
         ),
         "pywrap_lib_filter": attr.label(
+            allow_files = False,
+            providers = [CcInfo],
+            mandatory = False,
+        ),
+        "pywrap_lib_exclusion_filter": attr.label(
             allow_files = False,
             providers = [CcInfo],
             mandatory = False,
