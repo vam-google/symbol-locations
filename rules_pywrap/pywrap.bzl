@@ -229,9 +229,11 @@ def _construct_common_binary(
 
 def _pywrap_split_library_impl(ctx):
     pywrap_index = ctx.attr.pywrap_index
-    pw = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()[pywrap_index]
+    pw_list = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    pw = pw_list[pywrap_index]
     linker_inputs = pw.cc_info.linking_context.linker_inputs.to_list()
     li = linker_inputs[0]
+    user_link_flags = li.user_link_flags
 
     split_linker_inputs = []
     private_linker_inputs = []
@@ -249,7 +251,7 @@ def _pywrap_split_library_impl(ctx):
     return _construct_split_library_cc_info(
         ctx,
         split_linker_inputs,
-        li.user_link_flags,
+        user_link_flags,
         private_linker_inputs
     )
 
