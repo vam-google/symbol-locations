@@ -1,1 +1,1 @@
-exports_files(["pybind_extension.py.tpl"])
+exports_files(["pybind_extension.py.tpl", "pywrap.bzl"])

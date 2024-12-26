@@ -34,6 +34,20 @@ py_test(
     ],
 )
 
+py_test(
+    name = "pywrap_external_aggregated_binaries_test",
+    srcs = ["pywrap_external_aggregated_binaries_test.py"],
+    args = [
+        "--wheel-locations=$(location {})".format(
+            "//pywrap_external:pywrap_external_aggregated_binaries.json"
+        ),
+    ],
+    data = [
+        "//pywrap_external:pywrap_external_aggregated_binaries",
+        "//pywrap_external:pywrap_external_aggregated_binaries.json"
+    ]
+)
+
 py_binary(
     name = "pybind_external_py_binary",
     srcs = ["pybind_external_py_test.py"],

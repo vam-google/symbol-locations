@@ -7,6 +7,7 @@ PywrapInfo = provider(
         "common_lib_packages": "Packages in which to search for common pywrap library",
         "py_stub": "Pybind Python stub used to resolve cross-package references",
         "cc_only": "True if this PywrapInfo represents cc-only library (no PyIni_)",
+        "starlark_only": "",
     },
 )
 
@@ -19,7 +20,6 @@ CollectedPywrapInfo = provider(
 PywrapFilters = provider(
     fields = {
         "pywrap_lib_filter": "",
-        "pywrap_lib_exclusion_filter": "",
         "common_lib_filters": "",
     },
 )
@@ -33,6 +33,7 @@ def pywrap_library(
         linkopts = [],
         win_def_file = None,
         pywrap_count = None,
+        starlark_only_pywrap_count = 0,
         extra_deps = ["@pybind11//:pybind11"],
         visibility = None,
         testonly = None,
@@ -51,24 +52,36 @@ def pywrap_library(
         name = info_collector_name,
         deps = deps,
         pywrap_count = actual_pywrap_count,
+        starlark_only_pywrap_count = starlark_only_pywrap_count,
     )
 
     linker_input_filters_name = "_%s_linker_input_filters" % name
+    starlark_only_filter_name = None
+    if starlark_only_pywrap_count > 0:
+        starlark_only_filter_name = "%s__starlark_only_internal" % name
     _linker_input_filters(
         name = linker_input_filters_name,
         dep = ":%s" % info_collector_name,
         pywrap_lib_filter = pywrap_lib_filter,
         pywrap_lib_exclusion_filter = pywrap_lib_exclusion_filter,
         common_lib_filters = common_lib_filters,
+        starlark_only_filter_name = "%s__starlark_only_internal" % name,
     )
 
-#    common_deps = extra_deps
+    # common libraries that each pywrap object should depend on
     common_deps = []
+    # same as above but exclusive only for pywrap objects that do not get into wheel
+    starlark_only_common_deps = []
+    # binaries that are part of each test dependency
     binaries_data = []
+    # binaries that go into wheel (binaries_data + starlark_only ones)
+    internal_binaries = []
+
     common_lib_names = []
     common_lib_names.extend(common_lib_filters.values())
     common_lib_names.append("%s_internal" % name)
-    internal_binaries = []
+    if starlark_only_filter_name:
+        common_lib_names.append("%s__starlark_only_internal" % name)
 
     for common_lib_name in common_lib_names:
         if common_lib_name == name:
@@ -98,12 +111,15 @@ def pywrap_library(
         binaries_data.append(":%s" % common_cc_binary_name)
         internal_binaries.append(":%s" % common_cc_binary_name)
 
+    if starlark_only_filter_name:
+        starlark_only_common_deps.append(common_deps.pop())
+
     # 2) Create individual super-thin pywrap libraries, which depend on the
     # common one. The individual libraries must link in statically only the
     # object file with Python Extension's init function PyInit_<extension_name>
     #
     shared_objects = []
-    for pywrap_index in range(0, actual_pywrap_count):
+    for pywrap_index in range(0, actual_pywrap_count + starlark_only_pywrap_count):
         dep_name = "_%s_%s" % (name, pywrap_index)
         shared_object_name = "%s_shared_object" % dep_name
         win_def_name = "%s_win_def" % dep_name
@@ -126,10 +142,14 @@ def pywrap_library(
             compatible_with = compatible_with,
         )
 
+        actual_common_deps = common_deps
+        if pywrap_index >= actual_pywrap_count:
+            actual_common_deps = common_deps + starlark_only_common_deps
+
         native.cc_binary(
             name = shared_object_name,
             srcs = [],
-            deps = [":%s" % pywrap_name] + common_deps,
+            deps = [":%s" % pywrap_name] + actual_common_deps,
             linkshared = True,
             linkstatic = True,
             win_def_file = ":%s" % win_def_name,
@@ -148,6 +168,7 @@ def pywrap_library(
         name = pywrap_binaries_name,
         collected_pywraps = ":%s" % info_collector_name,
         deps = shared_objects,
+        common_deps = binaries_data,
         extension = select({
             "@bazel_tools//src/conditions:windows": ".pyd",
             "//conditions:default": ".so",
@@ -156,7 +177,7 @@ def pywrap_library(
         testonly = testonly,
         compatible_with = compatible_with,
     )
-    internal_binaries.append(pywrap_binaries_name)
+    internal_binaries.append(":%s" % pywrap_binaries_name)
     internal_binaries.append(wheel_locations_json_name)
 
     binaries_data.append(":%s" % pywrap_binaries_name)
@@ -295,8 +316,7 @@ def _pywrap_common_split_library_impl(ctx):
     else:
         libs_to_include = filters.common_lib_filters[ctx.attr.common_lib_name]
 
-    for i in range(0, len(pywrap_infos)):
-        pw = pywrap_infos[i]
+    for pw in pywrap_infos:
         pw_lis = pw.cc_info.linking_context.linker_inputs.to_list()[1:]
         for li in pw_lis:
             if li in libs_to_exclude:
@@ -400,10 +420,26 @@ def _linker_input_filters_impl(ctx):
                 common_lib_filters[name][li] = li.owner
                 visited_filters[li] = li.owner
 
+    pywrap_infos = ctx.attr.dep[CollectedPywrapInfo].pywrap_infos.to_list()
+    starlark_only_filter = {}
+
+    if ctx.attr.starlark_only_filter_name:
+        for pw in pywrap_infos:
+            if pw.starlark_only:
+                for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
+                    starlark_only_filter[li] = li.owner
+
+        for pw in pywrap_infos:
+            if not pw.starlark_only:
+                for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
+                    starlark_only_filter.pop(li, None)
+
+        common_lib_filters[ctx.attr.starlark_only_filter_name] = starlark_only_filter
     return [
         PywrapFilters(
             pywrap_lib_filter = pywrap_lib_filter,
             common_lib_filters = common_lib_filters,
+#            starlark_only_filter = starlark_only_filter,
         ),
     ]
 
@@ -429,6 +465,7 @@ _linker_input_filters = rule(
             mandatory = False,
             default = {},
         ),
+        "starlark_only_filter_name": attr.string(mandatory = False)
     },
     implementation = _linker_input_filters_impl,
 )
@@ -439,10 +476,16 @@ def pywrap_common_library(name, dep, filter_name = None):
         actual = "%s_import" % (filter_name if filter_name else dep + "_internal"),
     )
 
-def pywrap_binaries(name, dep):
+def pywrap_binaries(name, dep, **kwargs):
     native.alias(
         name = name,
-        actual = "%s_all_binaries" % dep
+        actual = "%s_all_binaries" % dep,
+        **kwargs
+    )
+    native.alias(
+        name = name + ".json",
+        actual = "%s_internal_binaries_wheel_locations.json" % dep,
+        **kwargs
     )
 
 def _generated_win_def_file_impl(ctx):
@@ -506,6 +549,7 @@ def pybind_extension(
         additional_exported_symbols = [],
         default_deps = ["@pybind11//:pybind11"],
         linkopts = [],
+        starlark_only = False,
         **kwargs):
     cc_library_name = "_%s_cc_library" % name
 
@@ -546,6 +590,7 @@ def pybind_extension(
             deps = ["%s" % cc_library_name],
             common_lib_packages = common_lib_packages,
             additional_exported_symbols = additional_exported_symbols,
+            starlark_only = starlark_only,
             testonly = testonly,
             compatible_with = compatible_with,
             visibility = visibility,
@@ -588,6 +633,7 @@ def _pywrap_info_wrapper_impl(ctx):
             common_lib_packages = ctx.attr.common_lib_packages,
             py_stub = py_stub,
             cc_only = False,
+            starlark_only = ctx.attr.starlark_only,
         ),
     ]
 
@@ -603,6 +649,7 @@ _pywrap_info_wrapper = rule(
             mandatory = False,
             default = [],
         ),
+        "starlark_only": attr.bool(mandatory = False, default = False),
     },
     implementation = _pywrap_info_wrapper_impl,
 )
@@ -617,6 +664,7 @@ def _cc_only_pywrap_info_wrapper_impl(ctx):
             common_lib_packages = ctx.attr.common_lib_packages,
             py_stub = None,
             cc_only = True,
+            starlark_only = False,
         ),
     ]
 
@@ -656,42 +704,68 @@ _pywrap_info_collector_aspect = aspect(
 )
 
 def _collected_pywrap_infos_impl(ctx):
-    pywrap_infos = []
+    pywrap_depsets = []
     for dep in ctx.attr.deps:
         if CollectedPywrapInfo in dep:
-            pywrap_infos.append(dep[CollectedPywrapInfo].pywrap_infos)
+            pywrap_depsets.append(dep[CollectedPywrapInfo].pywrap_infos)
 
-    rv = CollectedPywrapInfo(
+    all_pywraps = CollectedPywrapInfo(
         pywrap_infos = depset(
-            transitive = pywrap_infos,
+            transitive = pywrap_depsets,
             order = "topological",
         ),
     )
-    pywraps = rv.pywrap_infos.to_list()
 
-    if ctx.attr.pywrap_count != len(pywraps):
-        found_pywraps = "\n        ".join([str(pw.owner) for pw in pywraps])
-        fail("""
-    Number of actual pywrap libraries does not match expected pywrap_count.
-    Expected pywrap_count: {expected_pywrap_count}
-    Actual pywrap_count: {actual_pywra_count}
-    Actual pywrap libraries in the transitive closure of {label}:
-        {found_pywraps}
-    """.format(
-            expected_pywrap_count = ctx.attr.pywrap_count,
-            actual_pywra_count = len(pywraps),
-            label = ctx.label,
-            found_pywraps = found_pywraps,
-        ))
-
+    pywraps = []
+    sl_only_pywraps = []
     py_stubs = []
-    for pw in pywraps:
+
+    for pw in all_pywraps.pywrap_infos.to_list():
+        if pw.starlark_only:
+            sl_only_pywraps.append(pw)
+        else:
+            pywraps.append(pw)
         if pw.py_stub:
             py_stubs.append(pw.py_stub)
 
+    pw_count = ctx.attr.pywrap_count
+    sl_pw_count = ctx.attr.starlark_only_pywrap_count
+
+    if pw_count != len(pywraps) or sl_pw_count != len(sl_only_pywraps):
+        found_pws = "\n        ".join([str(pw.owner) for pw in pywraps])
+        found_sl_pws = "\n        ".join([str(pw.owner) for pw in sl_only_pywraps])
+        fail("""
+    Number of actual pywrap libraries does not match expected pywrap_count.
+    Expected regular pywrap_count: {expected_pywrap_count}
+    Actual regular pywrap_count: {actual_pywrap_count}
+    Expected starlark-only pywrap_count: {expected_starlark_only_pywrap_count}
+    Actual starlark-only pywrap_count: {starlark_only_pywrap_count}
+    Actual regualar pywrap libraries in the transitive closure of {label}:
+        {found_pws}
+    Actual starlark-only pywrap libraries in the transitive closure of {label}:
+        {found_sl_pws}
+    """.format(
+            expected_pywrap_count = pw_count,
+            expected_starlark_only_pywrap_count = sl_pw_count,
+            actual_pywrap_count = len(pywraps),
+            starlark_only_pywrap_count = len(sl_only_pywraps),
+            label = ctx.label,
+            found_pws = found_pws,
+            found_sl_pws = found_sl_pws,
+        ))
+
+
+    categorized_pywraps = CollectedPywrapInfo(
+        pywrap_infos = depset(
+            direct = pywraps,
+            transitive = [depset(sl_only_pywraps)],
+            order = "topological",
+        ),
+    )
+
     return [
         DefaultInfo(files = depset(direct = py_stubs)),
-        rv,
+        categorized_pywraps,
     ]
 
 collected_pywrap_infos = rule(
@@ -701,6 +775,7 @@ collected_pywrap_infos = rule(
             providers = [PyInfo],
         ),
         "pywrap_count": attr.int(mandatory = True, default = 1),
+        "starlark_only_pywrap_count": attr.int(mandatory = True, default = 0),
     },
     implementation = _collected_pywrap_infos_impl,
 )
@@ -738,16 +813,17 @@ def _pywrap_binaries_impl(ctx):
         )
 
         original_to_final_binaries.append(
-            "    '{original}' => '{final}'".format(
+            "    '{original}' => '{final}'{starlark_only}".format(
                 original = original_binary_file.path,
                 final = final_binary.path,
+                starlark_only = " (starlark-only)" if pywrap_info.starlark_only else ""
             ),
         )
 
         final_binaries.append(final_binary)
 
         final_binary_location = ""
-        if not pywrap_info.cc_only:
+        if not pywrap_info.cc_only and not pywrap_info.starlark_only:
             final_binary_location = "{root}{new_package}/{basename}".format(
                 root = final_binary.path.split(final_binary.short_path, 1)[0],
                 new_package = pywrap_info.owner.package,
@@ -763,6 +839,10 @@ def _pywrap_binaries_impl(ctx):
         content = str(wheel_locations),
     )
 
+    common_deps = ctx.attr.common_deps
+    for common_dep in common_deps:
+        original_to_final_binaries.append("    common lib => '{}'".format(common_dep.files.to_list()[0].path))
+
     original_to_final_binaries.append(
         "^^^ Shared objects corresondence map^^^\n\n",
     )
@@ -773,6 +853,7 @@ def _pywrap_binaries_impl(ctx):
 _pywrap_binaries = rule(
     attrs = {
         "deps": attr.label_list(mandatory = True, allow_files = False),
+        "common_deps": attr.label_list(mandatory = True, allow_files = False),
         "collected_pywraps": attr.label(mandatory = True, allow_files = False),
         "extension": attr.string(default = ".so"),
         "wheel_locations_json": attr.output(mandatory = True),

@@ -12,6 +12,17 @@ exports_files(["pybind_aggregated.def", "py_cc_pybind_aggregated.def"])
 # Logic shared between python and regular C++ binaries/test
 #
 cc_library(
+    name = "sixth_library",
+    hdrs = ["sixth_library.h"],
+    srcs = ["sixth_library.cc"],
+    deps = [":second_library"],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
+    alwayslink = False,
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "fifth_library",
     hdrs = ["fifth_library.h"],
     srcs = ["fifth_library.cc"],
@@ -149,6 +160,17 @@ pybind_extension(
     visibility = ["//visibility:public"],
 )
 
+pybind_extension(
+    name = "pybind_with_starlark_only",
+    srcs = ["pybind_with_starlark_only.cc"],
+    deps = [
+        ":sixth_library",
+    ],
+    common_lib_packages = ["pywrap_external", "pybind_external"],
+    starlark_only = True,
+    visibility = ["//visibility:public"],
+)
+
 py_library(
     name = "py_library_1",
     srcs = [],
@@ -184,20 +206,18 @@ pywrap_library(
     # Should be generated in final version
     win_def_file = ":pybind_aggregated.def",
     deps = [
+        ":pybind_with_starlark_only",
         ":py_library_1",
         ":py_library_2",
         ":py_library_3",
         ":py_library_4",
-#        ":pybind",
-#        ":pybind_copy",
-#        ":pybind_cc_only",
     ],
     common_lib_filters = {
         ":fifth_library": "libframework.so.2",
-#        ":fifth_library": "framework",
     },
     pywrap_lib_filter = ":third_library",
     pywrap_count = 3,
+    starlark_only_pywrap_count = 1,
     visibility = ["//visibility:public"],
 )
 
@@ -220,6 +240,17 @@ pywrap_binaries(
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
+    deps = [
+        ":pybind_aggregated",
+        # not needed, since duplicated, but passed to check that duplication is
+        # ok
+        "py_library_1"
+    ],
+)
+
+py_test(
+    name = "pybind_with_starlark_only_py_test",
+    srcs = ["pybind_with_starlark_only_py_test.py"],
     deps = [
         ":pybind_aggregated",
         # not needed, since duplicated, but passed to check that duplication is
@@ -255,4 +286,3 @@ cc_test(
         "@gtest//:gtest_main",
     ],
 )
-

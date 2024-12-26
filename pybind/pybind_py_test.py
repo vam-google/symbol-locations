@@ -24,7 +24,7 @@ class PybindTest(unittest.TestCase):
     print("7: regular.second_global_func")
     self.assertEqual(regular.second_global_func(), 2)
     print("8: regular_copy.second_global_func")
-    self.assertEqual(regular.second_global_func(), 2)
+    self.assertEqual(regular_copy.second_global_func(), 2)
     print("9: REGULAR_EXTRA_SYMBOL")
     self.assertEqual(REGULAR_EXTRA_SYMBOL, 123)
     print("10: REGULAR_COPY_EXTRA_SYMBOL")
