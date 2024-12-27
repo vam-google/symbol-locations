@@ -23,6 +23,9 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
       "/pywrap_external/pybind_cc_only.so": "",
       "/pywrap_external/pybind_with_starlark_only.so": "",
       "/pybind/pybind_with_starlark_only.py": "",
+      "/pywrap_external/libframework.so.2": "/pywrap_external/libframework.so.2",
+      "/pywrap_external/libpywrap_external_aggregated_internal.so": "/pywrap_external/libpywrap_external_aggregated_internal.so",
+      "/pywrap_external/libpywrap_external_aggregated__starlark_only_internal.so": ""
     }
 
     for rel_src, rel_dest in expected_relative_wheel_locations.items():

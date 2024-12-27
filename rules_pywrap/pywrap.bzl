@@ -65,23 +65,20 @@ def pywrap_library(
         pywrap_lib_filter = pywrap_lib_filter,
         pywrap_lib_exclusion_filter = pywrap_lib_exclusion_filter,
         common_lib_filters = common_lib_filters,
-        starlark_only_filter_name = "%s__starlark_only_internal" % name,
+        starlark_only_filter_name = starlark_only_filter_name,
     )
 
-    # common libraries that each pywrap object should depend on
     common_deps = []
-    # same as above but exclusive only for pywrap objects that do not get into wheel
     starlark_only_common_deps = []
-    # binaries that are part of each test dependency
     binaries_data = []
-    # binaries that go into wheel (binaries_data + starlark_only ones)
+    starlark_only_binaries_data = []
     internal_binaries = []
 
     common_lib_names = []
     common_lib_names.extend(common_lib_filters.values())
     common_lib_names.append("%s_internal" % name)
     if starlark_only_filter_name:
-        common_lib_names.append("%s__starlark_only_internal" % name)
+        common_lib_names.append(starlark_only_filter_name)
 
     for common_lib_name in common_lib_names:
         if common_lib_name == name:
@@ -113,6 +110,7 @@ def pywrap_library(
 
     if starlark_only_filter_name:
         starlark_only_common_deps.append(common_deps.pop())
+        starlark_only_binaries_data.append(binaries_data.pop())
 
     # 2) Create individual super-thin pywrap libraries, which depend on the
     # common one. The individual libraries must link in statically only the
@@ -168,7 +166,8 @@ def pywrap_library(
         name = pywrap_binaries_name,
         collected_pywraps = ":%s" % info_collector_name,
         deps = shared_objects,
-        common_deps = binaries_data,
+        common_binaries = binaries_data,
+        starlark_only_common_binaries = starlark_only_binaries_data,
         extension = select({
             "@bazel_tools//src/conditions:windows": ".pyd",
             "//conditions:default": ".so",
@@ -186,7 +185,7 @@ def pywrap_library(
     native.py_library(
         name = name,
         srcs = [":%s" % info_collector_name],
-        data = binaries_data,
+        data = binaries_data + starlark_only_binaries_data,
         testonly = testonly,
         compatible_with = compatible_with,
         visibility = visibility,
@@ -816,7 +815,7 @@ def _pywrap_binaries_impl(ctx):
             "    '{original}' => '{final}'{starlark_only}".format(
                 original = original_binary_file.path,
                 final = final_binary.path,
-                starlark_only = " (starlark-only)" if pywrap_info.starlark_only else ""
+                starlark_only = " (excluded from wheel)" if pywrap_info.starlark_only else ""
             ),
         )
 
@@ -834,14 +833,24 @@ def _pywrap_binaries_impl(ctx):
         if pywrap_info.py_stub:
             wheel_locations[pywrap_info.py_stub.path] = ""
 
+    for common_binary in ctx.attr.common_binaries:
+        final_binary = common_binary.files.to_list()[0]
+        original_to_final_binaries.append("    common lib => '{}'".format(
+            final_binary.path)
+        )
+        wheel_locations[final_binary.path] = final_binary.path
+    for starlark_only_common_binary in ctx.attr.starlark_only_common_binaries:
+        final_binary = starlark_only_common_binary.files.to_list()[0]
+        original_to_final_binaries.append(
+            "    common lib => '{}' (excluded from wheel)".format(
+                final_binary.path)
+        )
+        wheel_locations[final_binary.path] = ""
+
     ctx.actions.write(
         output = ctx.outputs.wheel_locations_json,
         content = str(wheel_locations),
     )
-
-    common_deps = ctx.attr.common_deps
-    for common_dep in common_deps:
-        original_to_final_binaries.append("    common lib => '{}'".format(common_dep.files.to_list()[0].path))
 
     original_to_final_binaries.append(
         "^^^ Shared objects corresondence map^^^\n\n",
@@ -853,7 +862,10 @@ def _pywrap_binaries_impl(ctx):
 _pywrap_binaries = rule(
     attrs = {
         "deps": attr.label_list(mandatory = True, allow_files = False),
-        "common_deps": attr.label_list(mandatory = True, allow_files = False),
+        "common_binaries": attr.label_list(mandatory = True, allow_files = False),
+        "starlark_only_common_binaries": attr.label_list(
+            mandatory = True,
+            allow_files = False),
         "collected_pywraps": attr.label(mandatory = True, allow_files = False),
         "extension": attr.string(default = ".so"),
         "wheel_locations_json": attr.output(mandatory = True),
