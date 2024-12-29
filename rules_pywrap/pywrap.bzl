@@ -27,6 +27,7 @@ PywrapFilters = provider(
 def pywrap_library(
         name,
         deps,
+        starlark_only_deps = [],
         pywrap_lib_filter = None,
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
@@ -42,6 +43,9 @@ def pywrap_library(
     # targets directly, so actual pywrap_count should just be equal to  number
     # of deps.
     actual_pywrap_count = len(deps) if pywrap_count == None else pywrap_count
+    if starlark_only_deps:
+        starlark_only_pywrap_count = len(starlark_only_deps)
+    actual_deps = deps + starlark_only_deps
 
     # 1) Create common libraries cc-only (C API) and py-specific (parts reused
     # by different pywrap libraries but dependin on Python symbols).
@@ -50,7 +54,7 @@ def pywrap_library(
     info_collector_name = "_%s_info_collector" % name
     collected_pywrap_infos(
         name = info_collector_name,
-        deps = deps,
+        deps = actual_deps,
         pywrap_count = actual_pywrap_count,
         starlark_only_pywrap_count = starlark_only_pywrap_count,
     )
