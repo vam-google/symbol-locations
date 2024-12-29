@@ -130,6 +130,7 @@ pybind_extension(
         "_EXTRA_SYMBOL"
     ],
     common_lib_packages = [
+        "",
         "pywrap_external/python",  # non-existent package to test that its Ok
         "pybind_external",
         "pywrap_external",
@@ -148,7 +149,7 @@ pybind_extension(
     additional_exported_symbols = [
         "_EXTRA_SYMBOL"
     ],
-    common_lib_packages = ["pywrap_external", "pybind_external"],
+    common_lib_packages = ["", "pywrap_external", "pybind_external"],
     visibility = ["//visibility:public"],
 )
 
@@ -166,7 +167,7 @@ pybind_extension(
     deps = [
         ":sixth_library",
     ],
-    common_lib_packages = ["pywrap_external", "pybind_external"],
+    common_lib_packages = ["", "pywrap_external", "pybind_external"],
     starlark_only = True,
     visibility = ["//visibility:public"],
 )

@@ -11,7 +11,7 @@ pywrap_library(
         "//pybind:pybind_cc_only",
     ],
     common_lib_filters = {
-        "//pybind:fifth_library": "libframework.so.2",
+        "//pybind:fifth_library": "pybind/libframework.so.2",
     },
     pywrap_count = 3,
     starlark_only_pywrap_count = 1,
