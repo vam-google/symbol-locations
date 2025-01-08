@@ -65,7 +65,7 @@ def pywrap_library(
     cur_pkg = cur_pkg + "/" if native.package_name() else cur_pkg
     starlark_only_filter_full_name = None
     if starlark_only_pywrap_count > 0:
-        starlark_only_filter_full_name = "%s%s__starlark_only_internal" % (cur_pkg, name)
+        starlark_only_filter_full_name = "%s%s__starlark_only_common" % (cur_pkg, name)
     _linker_input_filters(
         name = linker_input_filters_name,
         dep = ":%s" % info_collector_name,
@@ -83,7 +83,7 @@ def pywrap_library(
 
     common_lib_full_names = []
     common_lib_full_names.extend(common_lib_filters.values())
-    common_lib_full_names.append("%s%s_internal" % (cur_pkg, name))
+    common_lib_full_names.append("%s%s_common" % (cur_pkg, name))
     if starlark_only_filter_full_name:
         common_lib_full_names.append(starlark_only_filter_full_name)
 
@@ -173,7 +173,7 @@ def pywrap_library(
     # attribute in a py_library, which is the final and only public artifact of
     # this macro
     #
-    pywrap_binaries_name = "%s_internal_binaries" % name
+    pywrap_binaries_name = "%s_common_binaries" % name
     wheel_locations_json_name = ":%s_wheel_locations.json" % pywrap_binaries_name
     _pywrap_binaries(
         name = pywrap_binaries_name,
@@ -485,7 +485,7 @@ _linker_input_filters = rule(
 def pywrap_common_library(name, dep, filter_name = None):
     native.alias(
         name = name,
-        actual = "%s_import" % (filter_name if filter_name else dep + "_internal"),
+        actual = "%s_import" % (filter_name if filter_name else dep + "_common"),
     )
 
 def pywrap_binaries(name, dep, **kwargs):
@@ -496,7 +496,7 @@ def pywrap_binaries(name, dep, **kwargs):
     )
     native.alias(
         name = name + ".json",
-        actual = "%s_internal_binaries_wheel_locations.json" % dep,
+        actual = "%s_common_binaries_wheel_locations.json" % dep,
         **kwargs
     )
 

@@ -13,7 +13,7 @@ pywrap_library(
 )
 
 pywrap_common_library(
-    name = "pybind_external_aggregated_common",
+    name = "pybind_external_aggregated_internal",
     dep = ":pybind_external_aggregated",
 )
 
