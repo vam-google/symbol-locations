@@ -214,7 +214,10 @@ pywrap_library(
         ":py_library_4",
     ],
     common_lib_filters = {
-        ":fifth_library": "libframework.so.2",
+        "libframework.so.2": ":fifth_library",
+    },
+    common_lib_version_scripts = {
+        "libframework.so.2": "//pybind:framework.lds",
     },
     pywrap_lib_filter = ":third_library",
     pywrap_count = 3,

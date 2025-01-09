@@ -10,7 +10,7 @@ pywrap_library(
         "//pybind:pybind_cc_only",
     ],
     common_lib_filters = {
-        "//pybind:fifth_library": "pybind/libframework.so.2",
+        "pybind/libframework.so.2": "//pybind:fifth_library",
     },
     starlark_only_deps = [
         "//pybind:pybind_with_starlark_only",
