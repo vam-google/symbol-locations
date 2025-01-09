@@ -32,7 +32,7 @@ def pywrap_library(
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
         common_lib_version_scripts = {},
-        linkopts = [],
+        common_lib_linkopts = {},
         win_def_file = None,
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
@@ -93,8 +93,6 @@ def pywrap_library(
         common_lib_pkg, common_lib_name = _get_common_lib_package_and_name(
             common_lib_full_name,
         )
-        ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
-
         common_split_name = "_%s_split" % common_lib_name
         _pywrap_common_split_library(
             name = common_split_name,
@@ -104,6 +102,8 @@ def pywrap_library(
             testonly = testonly,
             compatible_with = compatible_with,
         )
+        ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
+        linkopts = common_lib_linkopts.get(common_lib_full_name, [])
 
         common_cc_binary_name = "%s" % common_lib_name
         common_import_name = _construct_common_binary(

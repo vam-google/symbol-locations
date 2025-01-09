@@ -219,6 +219,9 @@ pywrap_library(
     common_lib_version_scripts = {
         "libframework.so.2": "//pybind:framework.lds",
     },
+    common_lib_linkopts = {
+        "libframework.so.2": ["-z defs"],
+    },
     pywrap_lib_filter = ":third_library",
     pywrap_count = 3,
     starlark_only_pywrap_count = 1,
