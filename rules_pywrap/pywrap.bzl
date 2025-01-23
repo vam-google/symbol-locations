@@ -69,12 +69,15 @@ def pywrap_library(
     if starlark_only_pywrap_count > 0:
         starlark_only_filter_full_name = "%s%s__starlark_only_common" % (cur_pkg, name)
 
+    inverse_common_lib_filters = _construct_inverse_common_lib_filters(
+        common_lib_filters)
+
     _linker_input_filters(
         name = linker_input_filters_name,
         dep = ":%s" % info_collector_name,
         pywrap_lib_filter = pywrap_lib_filter,
         pywrap_lib_exclusion_filter = pywrap_lib_exclusion_filter,
-        common_lib_filters = {v: k for k, v in common_lib_filters.items()},
+        common_lib_filters = inverse_common_lib_filters,
         starlark_only_filter_name = starlark_only_filter_full_name,
     )
 
@@ -957,6 +960,20 @@ def _get_common_lib_package_and_name(common_lib_full_name):
     if "/" in common_lib_full_name:
         return common_lib_full_name.rsplit("/", 1)
     return "", common_lib_full_name
+
+def _construct_inverse_common_lib_filters(common_lib_filters):
+    inverse_common_lib_filters = {}
+    for common_lib_k, common_lib_v in common_lib_filters.items():
+        new_common_lib_k = common_lib_v
+        if type(common_lib_v) == type([]):
+            new_common_lib_k = "_%s_common_lib_filter" % common_lib_k.rsplit("/", 1)[-1]
+            native.cc_library(
+                name = new_common_lib_k,
+                deps = common_lib_v
+            )
+
+        inverse_common_lib_filters[new_common_lib_k] = common_lib_k
+    return inverse_common_lib_filters
 
 def _construct_linkopt_soname(name):
     soname = name.rsplit("/", 1)[1] if "/" in name else name
