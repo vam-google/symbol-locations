@@ -60,6 +60,9 @@ cc_library(
     features = ["windows_export_all_symbols"],
     linkstatic = True,
     alwayslink = False,
+    data = [
+        "//data:static_resource.txt",
+    ],
 )
 
 cc_library(
@@ -70,6 +73,10 @@ cc_library(
     linkstatic = False,
     deps = [":second_library"],
     alwayslink = False,
+    data = [
+        "//data:data_binary",
+        "//data:static_resource.txt",
+    ],
 )
 
 #
@@ -135,6 +142,7 @@ pybind_extension(
         "pybind_external",
         "pywrap_external",
     ],
+    data = [":static_resource.txt"],
     visibility = ["//visibility:public"],
 )
 
@@ -200,7 +208,6 @@ py_library(
     srcs = [],
     deps = [":pybind_cc_only"],
 )
-
 
 pywrap_library(
     name = "pybind_aggregated",
