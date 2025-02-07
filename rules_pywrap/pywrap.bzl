@@ -1002,7 +1002,7 @@ def _construct_inverse_common_lib_filters(common_lib_filters):
             new_common_lib_k = "_%s_common_lib_filter" % common_lib_k.rsplit("/", 1)[-1]
             native.cc_library(
                 name = new_common_lib_k,
-                deps = common_lib_v
+                deps = common_lib_v,
             )
 
         inverse_common_lib_filters[new_common_lib_k] = common_lib_k
