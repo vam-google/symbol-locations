@@ -113,7 +113,7 @@ def pywrap_library(
         common_cc_binary_name = "%s" % common_lib_name
         common_import_name = _construct_common_binary(
             common_cc_binary_name,
-            [":%s" % common_split_name] + common_deps,
+            common_deps + [":%s" % common_split_name],
             linkopts,
             testonly,
             compatible_with,
