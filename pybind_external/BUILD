@@ -1,15 +1,15 @@
-load("//rules_pywrap:pywrap.bzl", "pywrap_library", "pywrap_common_library")
+load("//rules_pywrap:pywrap.bzl", "pywrap_common_library", "pywrap_library")
 
 pywrap_library(
     name = "pybind_external_aggregated",
+    pywrap_lib_filter = "//pybind:third_library",
     # Should be generated in final version
     win_def_file = "//pybind:pybind_aggregated.def",
     deps = [
-        "//pybind:pybind",
-        "//pybind:pybind_copy",
+        "//pybind",
         "//pybind:pybind_cc_only",
+        "//pybind:pybind_copy",
     ],
-    pywrap_lib_filter = "//pybind:third_library",
 )
 
 pywrap_common_library(
@@ -39,13 +39,13 @@ py_test(
     srcs = ["pywrap_external_aggregated_binaries_test.py"],
     args = [
         "--wheel-locations=$(location {})".format(
-            "//pywrap_external:pywrap_external_aggregated_binaries.json"
+            "//pywrap_external:pywrap_external_aggregated_binaries.json",
         ),
     ],
     data = [
         "//pywrap_external:pywrap_external_aggregated_binaries",
-        "//pywrap_external:pywrap_external_aggregated_binaries.json"
-    ]
+        "//pywrap_external:pywrap_external_aggregated_binaries.json",
+    ],
 )
 
 py_binary(

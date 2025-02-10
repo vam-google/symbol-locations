@@ -71,7 +71,8 @@ def pywrap_library(
         starlark_only_filter_full_name = "%s%s__starlark_only_common" % (cur_pkg, name)
 
     inverse_common_lib_filters = _construct_inverse_common_lib_filters(
-        common_lib_filters)
+        common_lib_filters,
+    )
 
     _linker_input_filters(
         name = linker_input_filters_name,
@@ -208,7 +209,7 @@ def pywrap_library(
     native.py_library(
         name = name,
         srcs = [":%s" % info_collector_name],
-        data = all_binaries_data ,
+        data = all_binaries_data,
         testonly = testonly,
         compatible_with = compatible_with,
         visibility = visibility,
@@ -249,7 +250,7 @@ def _construct_common_binary(
         compatible_with = compatible_with,
         win_def_file = win_def_file,
         local_defines = local_defines,
-#        data = data,
+        #        data = data,
     )
 
     if_lib_name = "%s_if_lib" % name
@@ -302,7 +303,8 @@ def _pywrap_split_library_impl(ctx):
         private_linker_inputs = [
             depset(direct = private_lis),
         ]
-#        default_runfiles = pw.default_runfiles
+
+    #        default_runfiles = pw.default_runfiles
 
     return _construct_split_library_cc_info(
         ctx,
@@ -369,7 +371,12 @@ def _pywrap_common_split_library_impl(ctx):
                     pw_runfiles_merged = True
 
     return _construct_split_library_cc_info(
-        ctx, split_linker_inputs, list(user_link_flags.keys()), [], default_runfiles)
+        ctx,
+        split_linker_inputs,
+        list(user_link_flags.keys()),
+        [],
+        default_runfiles,
+    )
 
 _pywrap_common_split_library = rule(
     attrs = {
@@ -418,8 +425,8 @@ def _construct_split_library_cc_info(
 
     return [
         CcInfo(linking_context = linking_context),
-#        DefaultInfo(files = default_runfiles.files)
-        DefaultInfo(runfiles = default_runfiles)
+        #        DefaultInfo(files = default_runfiles.files)
+        DefaultInfo(runfiles = default_runfiles),
     ]
 
 def _construct_dependency_libraries(ctx, split_linker_inputs):
@@ -685,7 +692,8 @@ def _pywrap_info_wrapper_impl(ctx):
     )
 
     default_runfiles = ctx.runfiles().merge(
-        ctx.attr.deps[0][DefaultInfo].default_runfiles)
+        ctx.attr.deps[0][DefaultInfo].default_runfiles,
+    )
 
     return [
         PyInfo(transitive_sources = depset()),
@@ -720,7 +728,8 @@ _pywrap_info_wrapper = rule(
 def _cc_only_pywrap_info_wrapper_impl(ctx):
     wrapped_dep = ctx.attr.deps[0]
     default_runfiles = ctx.runfiles().merge(
-        ctx.attr.deps[0][DefaultInfo].default_runfiles)
+        ctx.attr.deps[0][DefaultInfo].default_runfiles,
+    )
 
     return [
         PyInfo(transitive_sources = depset()),

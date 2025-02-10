@@ -1,44 +1,48 @@
-load("//rules_pywrap:pywrap.bzl",
+load(
+    "//rules_pywrap:pywrap.bzl",
     "pybind_extension",
-    "pywrap_library",
-    "pywrap_common_library",
     "pywrap_binaries",
+    "pywrap_common_library",
+    "pywrap_library",
 )
-#load("//:pywrap_repositories.bzl", "py_test")
-exports_files(["pybind_aggregated.def", "py_cc_pybind_aggregated.def"])
 
+#load("//:pywrap_repositories.bzl", "py_test")
+exports_files([
+    "pybind_aggregated.def",
+    "py_cc_pybind_aggregated.def",
+])
 
 #
 # Logic shared between python and regular C++ binaries/test
 #
 cc_library(
     name = "sixth_library",
-    hdrs = ["sixth_library.h"],
     srcs = ["sixth_library.cc"],
-    deps = [":second_library"],
+    hdrs = ["sixth_library.h"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
-    alwayslink = False,
     visibility = ["//visibility:public"],
+    deps = [":second_library"],
+    alwayslink = False,
 )
 
 cc_library(
     name = "fifth_library",
-    hdrs = ["fifth_library.h"],
     srcs = ["fifth_library.cc"],
-    deps = [":second_library"],
+    hdrs = ["fifth_library.h"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
-    alwayslink = False,
     visibility = ["//visibility:public"],
+    deps = [":second_library"],
+    alwayslink = False,
 )
 
 cc_library(
     name = "fourth_library",
     srcs = ["fourth_library.cc"],
-    deps = [":second_library"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
+    deps = [":second_library"],
     alwayslink = False,
 )
 
@@ -46,37 +50,45 @@ cc_library(
     name = "third_library",
     srcs = ["third_library.cc"],
     hdrs = ["third_library.h"],
-#    deps = [":second_library"],
+    #    deps = [":second_library"],
     features = ["windows_export_all_symbols"],
     linkstatic = True,
-    alwayslink = False,
     visibility = ["//visibility:public"],
+    alwayslink = False,
 )
 
 cc_library(
     name = "second_library",
     srcs = ["second_library.cc"],
     hdrs = ["second_library.h"],
-    features = ["windows_export_all_symbols"],
-    linkstatic = True,
-    alwayslink = False,
     data = [
         "//data:static_resource.txt",
     ],
+    features = ["windows_export_all_symbols"],
+    linkstatic = True,
+    alwayslink = False,
+)
+
+cc_binary(
+    name = "second_binary",
+    features = ["windows_export_all_symbols"],
+    #    linkstatic = True,
+    linkshared = True,
+    deps = [":second_library"],
 )
 
 cc_library(
     name = "first_library",
     srcs = ["first_library.cc"],
     hdrs = ["first_library.h"],
-    features = ["windows_export_all_symbols"],
-    linkstatic = False,
-    deps = [":second_library"],
-    alwayslink = False,
     data = [
         "//data:data_binary",
         "//data:static_resource.txt",
     ],
+    features = ["windows_export_all_symbols"],
+    linkstatic = False,
+    deps = [":second_library"],
+    alwayslink = False,
 )
 
 #
@@ -127,14 +139,8 @@ cc_test(
 pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
-    deps = [
-        ":first_library",
-        ":second_library",
-        ":fifth_library",
-        ":third_library",
-    ],
     additional_exported_symbols = [
-        "_EXTRA_SYMBOL"
+        "_EXTRA_SYMBOL",
     ],
     common_lib_packages = [
         "",
@@ -144,40 +150,54 @@ pybind_extension(
     ],
     data = [":static_resource.txt"],
     visibility = ["//visibility:public"],
+    deps = [
+        ":fifth_library",
+        ":first_library",
+        ":second_library",
+        ":third_library",
+    ],
 )
 
 pybind_extension(
     name = "pybind_copy",
     srcs = ["pybind_copy.cc"],
+    additional_exported_symbols = [
+        "_EXTRA_SYMBOL",
+    ],
+    common_lib_packages = [
+        "",
+        "pywrap_external",
+        "pybind_external",
+    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":first_library",
         ":second_library",
         ":third_library",
     ],
-    additional_exported_symbols = [
-        "_EXTRA_SYMBOL"
-    ],
-    common_lib_packages = ["", "pywrap_external", "pybind_external"],
-    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
     name = "pybind_cc_only",
+    visibility = ["//visibility:public"],
     deps = [
         "fourth_library",
     ],
-    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
     name = "pybind_with_starlark_only",
     srcs = ["pybind_with_starlark_only.cc"],
+    common_lib_packages = [
+        "",
+        "pywrap_external",
+        "pybind_external",
+    ],
+    starlark_only = True,
+    visibility = ["//visibility:public"],
     deps = [
         ":sixth_library",
     ],
-    common_lib_packages = ["", "pywrap_external", "pybind_external"],
-    starlark_only = True,
-    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -186,13 +206,15 @@ py_library(
     deps = [":pybind"],
 )
 
-
 py_library(
     name = "py_library_2",
     srcs = [],
     # "pybind" is already in py_library1, duplicats "pybind" on purpose
     # to test that it is ok
-    deps = [":py_library_3", ":pybind"],
+    deps = [
+        ":py_library_3",
+        ":pybind",
+    ],
 )
 
 py_library(
@@ -211,39 +233,39 @@ py_library(
 
 pywrap_library(
     name = "pybind_aggregated",
-    # Should be generated in final version
-    win_def_file = ":pybind_aggregated.def",
-    deps = [
-        ":pybind_with_starlark_only",
-        ":py_library_1",
-        ":py_library_2",
-        ":py_library_3",
-        ":py_library_4",
-    ],
     common_lib_filters = {
         "libframework.so.2": [":fifth_library"],
-    },
-    common_lib_version_scripts = {
-        "libframework.so.2": "//pybind:framework.lds",
     },
     common_lib_linkopts = {
         "libframework.so.2": ["-z defs"],
     },
-    pywrap_lib_filter = ":third_library",
+    common_lib_version_scripts = {
+        "libframework.so.2": "//pybind:framework.lds",
+    },
     pywrap_count = 3,
+    pywrap_lib_filter = ":third_library",
     starlark_only_pywrap_count = 1,
     visibility = ["//visibility:public"],
+    # Should be generated in final version
+    win_def_file = ":pybind_aggregated.def",
+    deps = [
+        ":py_library_1",
+        ":py_library_2",
+        ":py_library_3",
+        ":py_library_4",
+        ":pybind_with_starlark_only",
+    ],
 )
 
 pywrap_common_library(
     name = "common_pybind_aggregated_internal",
-    dep = ":pybind_aggregated"
+    dep = ":pybind_aggregated",
 )
 
 pywrap_common_library(
     name = "common_pybind_aggregated_framework",
     dep = ":pybind_aggregated",
-    filter_name = "libframework.so.2"
+    filter_name = "libframework.so.2",
 )
 
 pywrap_binaries(
@@ -258,7 +280,7 @@ py_test(
         ":pybind_aggregated",
         # not needed, since duplicated, but passed to check that duplication is
         # ok
-        "py_library_1"
+        "py_library_1",
     ],
 )
 
@@ -269,7 +291,7 @@ py_test(
         ":pybind_aggregated",
         # not needed, since duplicated, but passed to check that duplication is
         # ok
-        "py_library_1"
+        "py_library_1",
     ],
 )
 
@@ -289,10 +311,10 @@ cc_test(
 cc_test(
     name = "py_common_library_test",
     srcs = [
-        "py_common_library_test.cc",
-        "first_library.h",
-        "second_library.h",
         "fifth_library.h",
+        "first_library.h",
+        "py_common_library_test.cc",
+        "second_library.h",
     ],
     deps = [
         ":common_pybind_aggregated_framework",
