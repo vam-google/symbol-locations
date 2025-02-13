@@ -1,3 +1,4 @@
+import os
 import unittest
 import json
 import argparse
@@ -15,18 +16,30 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
     with open(args.wheel_locations) as f:
       wheel_locations = json.load(f)
 
-    expected_relative_wheel_locations = {
-      "/pywrap_external/pybind.so": "/pybind/pybind.so",
-      "/pybind/pybind.py": "",
-      "/pywrap_external/pybind_copy.so": "/pybind/pybind_copy.so",
-      "/pybind/pybind_copy.py": "",
-      "/pywrap_external/pybind_cc_only.so": "",
-      "/pywrap_external/pybind_with_starlark_only.so": "",
-      "/pybind/pybind_with_starlark_only.py": "",
-      "/pywrap_external/libframework.so.2": "/pybind/libframework.so.2",
-      "/pywrap_external/libpywrap_external_aggregated_common.so": "/pywrap_external/libpywrap_external_aggregated_common.so",
-      "/pywrap_external/libpywrap_external_aggregated__starlark_only_common.so": ""
-    }
+    relative_wheel_locations = [
+        ("/pywrap_external/pybind.{extension}", "/pybind/pybind.{extension}"),
+        ("/pybind/pybind.py", ""),
+        ("/pywrap_external/pybind_copy.{extension}",
+         "/pybind/pybind_copy.{extension}"),
+        ("/pybind/pybind_copy.py", ""),
+        ("/pywrap_external/pybind_cc_only.{extension}", ""),
+        ("/pywrap_external/pybind_with_starlark_only.{extension}", ""),
+        ("/pybind/pybind_with_starlark_only.py", ""),
+        ("/pywrap_external/libframework.so.2", "/pybind/libframework.so.2"),
+        ("/pywrap_external/{lib}pywrap_external_aggregated_common.dll",
+         "/pywrap_external/pywrap_external_aggregated_common.dll"),
+        (
+            "/pywrap_external/{lib}pywrap_external_aggregated__starlark_only_common.dll",
+            ""),
+    ]
+
+    extension = "pyd" if "nt" in os.name else "so"
+    lib_prefix = "" if "nt" in os.name else "lib"
+    expected_relative_wheel_locations = {}
+    for k, v in relative_wheel_locations:
+      new_k = k.format(extension=extension, lib=lib_prefix)
+      new_v = v.format(extension=extension, lib=lib_prefix)
+      expected_relative_wheel_locations[new_k] = new_v
 
     for rel_src, rel_dest in expected_relative_wheel_locations.items():
       matched_srcs = None
@@ -37,9 +50,10 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         del wheel_locations[src]
         matched_srcs = src
         break
-      self.assertTrue(matched_srcs)
+      self.assertTrue(matched_srcs, msg="Could not find '" + rel_src + "'")
 
-    self.assertEqual(wheel_locations, {})
+    self.assertEqual(wheel_locations, {}, msg=str(wheel_locations))
+
 
 if __name__ == '__main__':
   PywrapExternalAggregatedBinariesTest().test_pywrap_binaries()

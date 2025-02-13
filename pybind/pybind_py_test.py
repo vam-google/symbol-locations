@@ -1,4 +1,5 @@
 import unittest
+import os
 from pybind import pybind as regular
 from pybind import pybind_copy as regular_copy
 import pybind.pybind
@@ -36,7 +37,10 @@ class PybindTest(unittest.TestCase):
     self.assertEqual(REGULAR_COPY_EXTRA_SYMBOL, 123)
 
     print("11: binary resource size")
-    self.assertTrue(self._read_file("data/data_binary", "rb"))
+    if "nt" in os.name:
+      self.assertTrue(self._read_file("data/data_binary.exe", "rb"))
+    else:
+      self.assertTrue(self._read_file("data/data_binary", "rb"))
     print("12: data/static_resource")
     self.assertEqual(self._read_file("data/static_resource.txt"),
                      "A static resource file under data dir")

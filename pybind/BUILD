@@ -69,14 +69,6 @@ cc_library(
     alwayslink = False,
 )
 
-cc_binary(
-    name = "second_binary",
-    features = ["windows_export_all_symbols"],
-    #    linkstatic = True,
-    linkshared = True,
-    deps = [":second_library"],
-)
-
 cc_library(
     name = "first_library",
     srcs = ["first_library.cc"],
@@ -237,7 +229,10 @@ pywrap_library(
         "libframework.so.2": [":fifth_library"],
     },
     common_lib_linkopts = {
-        "libframework.so.2": ["-z defs"],
+        "libframework.so.2": select({
+            "@bazel_tools//src/conditions:windows": [],
+            "//conditions:default": ["-z defs"],
+        }),
     },
     common_lib_version_scripts = {
         "libframework.so.2": "//pybind:framework.lds",

@@ -8,6 +8,7 @@ __declspec(dllimport) extern int second_global;
 extern int second_global;
 #endif
 
+
 int second_func(int x);
 int second_global_func();
 

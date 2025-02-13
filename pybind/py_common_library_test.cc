@@ -32,7 +32,11 @@ TEST(PyCommonLibraryTest, PyCommonLibraryTest) {
   EXPECT_EQ(fifth_func(), 2);
 
   std::cout << "10: binary resource size" << std::endl;
+#ifdef _WIN32
+  EXPECT_TRUE(!read_file("data/data_binary.exe").empty());
+#else
   EXPECT_TRUE(!read_file("data/data_binary").empty());
+#endif // _WIN32
   std::cout << "11: data/static_resource" << std::endl;
   EXPECT_EQ(read_file("data/static_resource.txt"),
             "A static resource file under data dir");
