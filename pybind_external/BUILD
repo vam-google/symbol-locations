@@ -4,7 +4,6 @@ pywrap_library(
     name = "pybind_external_aggregated",
     pywrap_lib_filter = "//pybind:third_library",
     # Should be generated in final version
-    win_def_file = "//pybind:pybind_aggregated.def",
     deps = [
         "//pybind",
         "//pybind:pybind_cc_only",

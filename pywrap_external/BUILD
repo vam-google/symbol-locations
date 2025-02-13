@@ -10,8 +10,6 @@ pywrap_library(
         "//pybind:pybind_with_starlark_only",
     ],
     visibility = ["//visibility:public"],
-    # Should be generated in final version
-    win_def_file = "//pybind:pybind_aggregated.def",
     deps = [
         "//pybind",
         "//pybind:pybind_cc_only",
