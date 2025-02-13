@@ -241,8 +241,6 @@ pywrap_library(
     pywrap_lib_filter = ":third_library",
     starlark_only_pywrap_count = 1,
     visibility = ["//visibility:public"],
-    # Should be generated in final version
-    win_def_file = ":pybind_aggregated.def",
     deps = [
         ":py_library_1",
         ":py_library_2",

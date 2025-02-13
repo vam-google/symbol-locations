@@ -41,7 +41,6 @@ def pywrap_library(
         common_lib_filters = {},
         common_lib_version_scripts = {},
         common_lib_linkopts = {},
-        win_def_file = None,
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
         extra_deps = ["@pybind11//:pybind11"],
