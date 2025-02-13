@@ -19,6 +19,7 @@ pywrap_common_library(
 py_test(
     name = "pybind_external_py_test",
     srcs = ["pybind_external_py_test.py"],
+    visibility = ["//:__pkg__"],
     deps = [
         ":pybind_external_aggregated",
     ],
@@ -28,6 +29,7 @@ py_test(
     name = "pybind_pywrap_external_py_test",
     srcs = ["pybind_external_py_test.py"],
     main = "pybind_external_py_test.py",
+    visibility = ["//:__pkg__"],
     deps = [
         "//pywrap_external:pywrap_external_aggregated",
     ],
@@ -41,6 +43,7 @@ py_test(
             "//pywrap_external:pywrap_external_aggregated_binaries.json",
         ),
     ],
+    visibility = ["//:__pkg__"],
     data = [
         "//pywrap_external:pywrap_external_aggregated_binaries",
         "//pywrap_external:pywrap_external_aggregated_binaries.json",

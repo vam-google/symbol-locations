@@ -116,6 +116,7 @@ cc_library(
 cc_test(
     name = "regular_cc_test",
     srcs = ["regular_test.cc"],
+    visibility = ["//:__pkg__"],
     deps = [
         ":regular",
         ":regular_copy",
@@ -269,6 +270,7 @@ pywrap_binaries(
 py_test(
     name = "pybind_py_test",
     srcs = ["pybind_py_test.py"],
+    visibility = ["//:__pkg__"],
     deps = [
         ":pybind_aggregated",
         # not needed, since duplicated, but passed to check that duplication is
@@ -280,6 +282,7 @@ py_test(
 py_test(
     name = "pybind_with_starlark_only_py_test",
     srcs = ["pybind_with_starlark_only_py_test.py"],
+    visibility = ["//:__pkg__"],
     deps = [
         ":pybind_aggregated",
         # not needed, since duplicated, but passed to check that duplication is
@@ -295,6 +298,7 @@ cc_test(
         "first_library.h",
         "second_library.h",
     ],
+    visibility = ["//:__pkg__"],
     deps = [
         ":common_pybind_aggregated_framework",
         "@gtest//:gtest_main",
@@ -309,6 +313,7 @@ cc_test(
         "py_common_library_test.cc",
         "second_library.h",
     ],
+    visibility = ["//:__pkg__"],
     deps = [
         ":common_pybind_aggregated_framework",
         ":common_pybind_aggregated_internal",

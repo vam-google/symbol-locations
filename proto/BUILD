@@ -11,33 +11,33 @@ cc_proto_library(
 cc_library(
     name = "my_proto_cc_library",
     srcs = [
-        "my_proto_symbols.cc"
+        "my_proto_symbols.cc",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":my_proto_library",
     ],
     alwayslink = True,
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "my_proto_cc_library_headers",
     hdrs = [":my_proto_library"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_protobuf//:protobuf_headers",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_binary(
     name = "my_proto_cc_binary",
+    linkshared = True,
+    linkstatic = True,
+    win_def_file = "my_proto.def",
     deps = [
         ":my_proto_cc_library",
         "@com_google_protobuf//:protobuf",
     ],
-    linkshared = True,
-    linkstatic = True,
-    win_def_file = "my_proto.def",
 )
 
 filegroup(
@@ -48,19 +48,20 @@ filegroup(
 
 cc_import(
     name = "my_proto_cc_import",
-    shared_library = "my_proto_cc_binary",
     interface_library = "my_proto_if_lib",
+    shared_library = "my_proto_cc_binary",
 )
 
 cc_test(
     name = "proto_test",
     srcs = ["proto_test.cc"],
-    deps = [
-        "@gtest//:gtest_main",
-        ":my_proto_cc_import",
-        "@com_google_protobuf//:protobuf_headers",
-        ":my_proto_cc_library_headers",
-    ],
-    local_defines = ["PROTOBUF_USE_DLLS"],
     linkstatic = False,
+    local_defines = ["PROTOBUF_USE_DLLS"],
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":my_proto_cc_import",
+        ":my_proto_cc_library_headers",
+        "@com_google_protobuf//:protobuf_headers",
+        "@gtest//:gtest_main",
+    ],
 )
