@@ -17,13 +17,14 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
       wheel_locations = json.load(f)
 
     relative_wheel_locations = [
-        ("/pywrap_external/pybind.{extension}", "/pybind/pybind.{extension}"),
+        ("/pywrap_external/pybind.{pyextension}",
+         "/pybind/pybind.{pyextension}"),
         ("/pybind/pybind.py", ""),
-        ("/pywrap_external/pybind_copy.{extension}",
-         "/pybind/pybind_copy.{extension}"),
+        ("/pywrap_external/pybind_copy.{pyextension}",
+         "/pybind/pybind_copy.{pyextension}"),
         ("/pybind/pybind_copy.py", ""),
-        ("/pywrap_external/pybind_cc_only.{extension}", ""),
-        ("/pywrap_external/pybind_with_starlark_only.{extension}", ""),
+        ("/pywrap_external/pybind_cc_only.{pyextension}", ""),
+        ("/pywrap_external/pybind_with_starlark_only.{pyextension}", ""),
         ("/pybind/pybind_with_starlark_only.py", ""),
         ("/pywrap_external/libframework.so.2", "/pybind/libframework.so.2"),
         ("/pywrap_external/{lib}pywrap_external_aggregated_common.{extension}",
@@ -33,12 +34,15 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
             ""),
     ]
 
-    extension = "pyd" if "nt" in os.name else "so"
+    pyextension = "pyd" if "nt" in os.name else "so"
+    extension = "dll" if "nt" in os.name else "so"
     lib_prefix = "" if "nt" in os.name else "lib"
     expected_relative_wheel_locations = {}
     for k, v in relative_wheel_locations:
-      new_k = k.format(extension=extension, lib=lib_prefix)
-      new_v = v.format(extension=extension, lib=lib_prefix)
+      new_k = k.format(pyextension=pyextension, extension=extension,
+                       lib=lib_prefix)
+      new_v = v.format(pyextension=pyextension, extension=extension,
+                       lib=lib_prefix)
       expected_relative_wheel_locations[new_k] = new_v
 
     for rel_src, rel_dest in expected_relative_wheel_locations.items():
