@@ -26,10 +26,10 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         ("/pywrap_external/pybind_with_starlark_only.{extension}", ""),
         ("/pybind/pybind_with_starlark_only.py", ""),
         ("/pywrap_external/libframework.so.2", "/pybind/libframework.so.2"),
-        ("/pywrap_external/{lib}pywrap_external_aggregated_common.dll",
-         "/pywrap_external/pywrap_external_aggregated_common.dll"),
+        ("/pywrap_external/{lib}pywrap_external_aggregated_common.{extension}",
+         "/pywrap_external/{lib}pywrap_external_aggregated_common.{extension}"),
         (
-            "/pywrap_external/{lib}pywrap_external_aggregated__starlark_only_common.dll",
+            "/pywrap_external/{lib}pywrap_external_aggregated__starlark_only_common.{extension}",
             ""),
     ]
 
