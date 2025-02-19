@@ -226,6 +226,9 @@ py_library(
 
 pywrap_library(
     name = "pybind_aggregated",
+    common_lib_def_file_filters = {
+        "libframework.so.2": "//pybind:framework.json",
+    },
     common_lib_filters = {
         "libframework.so.2": [":fifth_library"],
     },

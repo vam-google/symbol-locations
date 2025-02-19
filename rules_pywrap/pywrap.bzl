@@ -40,6 +40,7 @@ def pywrap_library(
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
         common_lib_version_scripts = {},
+        common_lib_def_file_filters = {},
         common_lib_linkopts = {},
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
@@ -117,16 +118,20 @@ def pywrap_library(
                 "//conditions:default": False,
             }),
         )
-        ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
 
         win_def_name = "_%s_def" % common_lib_name
+        def_file_filter = common_lib_def_file_filters.get(
+            common_lib_full_name,
+            None,
+        )
         generated_common_win_def_file(
             name = win_def_name,
             dep = ":%s" % common_split_name,
+            filter = def_file_filter,
         )
 
         linkopts = common_lib_linkopts.get(common_lib_full_name, [])
-
+        ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
         common_cc_binary_name = "%s" % common_lib_name
         common_import_name = _construct_common_binary(
             common_cc_binary_name,
@@ -1080,12 +1085,13 @@ def _construct_linkopt_version_script(version_script):
     return ["-Wl,--version-script,$(location {})".format(version_script)]
 
 def _generated_common_win_def_file_impl(ctx):
-    win_def_file_name = "%s.gen.def" % ctx.attr.name
-    dll_name = "%s.dll" % ctx.attr.name
-    win_def_file = ctx.actions.declare_file(win_def_file_name)
+    win_raw_def_file_name = "%s.gen.def" % ctx.attr.name
+    if ctx.attr.filter:
+        win_raw_def_file_name = "%s.raw.gen.def" % ctx.attr.name
+    win_raw_def_file = ctx.actions.declare_file(win_raw_def_file_name)
 
     args = ctx.actions.args()
-    args.add(win_def_file)
+    args.add(win_raw_def_file)
     args.add("")
     obj_files_args = ctx.actions.args()
     obj_files_args.add_all(ctx.attr.dep[ObjectFiles].objects)
@@ -1097,8 +1103,26 @@ def _generated_common_win_def_file_impl(ctx):
         tools = [ctx.executable.parser],
         executable = ctx.executable.parser,
         arguments = [args, obj_files_args],
-        outputs = [win_def_file],
+        outputs = [win_raw_def_file],
     )
+
+    win_def_file = win_raw_def_file
+    if ctx.attr.filter:
+        win_def_file_name = "%s.gen.def" % ctx.attr.name
+        win_def_file = ctx.actions.declare_file(win_def_file_name)
+
+        filter_args = ctx.actions.args()
+        filter_args.add("--def-file", win_raw_def_file)
+        filter_args.add("--def-file-filter", ctx.file.filter)
+        filter_args.add("--filtered-def-file", win_def_file)
+
+        ctx.actions.run(
+            inputs = [win_raw_def_file, ctx.file.filter],
+            tools = [ctx.executable.filter_tool],
+            executable = ctx.executable.filter_tool,
+            arguments = [filter_args],
+            outputs = [win_def_file],
+        )
 
     return [DefaultInfo(files = depset(direct = [win_def_file]))]
 
@@ -1108,9 +1132,18 @@ generated_common_win_def_file = rule(
             providers = [ObjectFiles],
             mandatory = True,
         ),
+        "filter": attr.label(
+            allow_single_file = True,
+            mandatory = False,
+        ),
         "parser": attr.label(
-            allow_files = True,
+            allow_single_file = True,
             default = Label("@bazel_tools//tools/def_parser:def_parser"),
+            executable = True,
+            cfg = "host",
+        ),
+        "filter_tool": attr.label(
+            default = Label(":def_file_filter_tool"),
             executable = True,
             cfg = "host",
         ),
