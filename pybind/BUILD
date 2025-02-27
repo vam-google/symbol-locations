@@ -230,7 +230,10 @@ pywrap_library(
         "libframework.so.2": "//pybind:framework.json",
     },
     common_lib_filters = {
-        "libframework.so.2": [":fifth_library"],
+        "libframework.so.2": select({
+            "@bazel_tools//src/conditions:windows": [":fifth_library"],
+            "//conditions:default": [":fifth_library"],
+        }),
     },
     common_lib_linkopts = {
         "libframework.so.2": select({

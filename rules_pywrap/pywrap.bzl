@@ -302,7 +302,7 @@ def _construct_common_binary(
         data = data,
     )
 
-    return import_name
+    return cc_lib_name
 
 def _pywrap_split_library_impl(ctx):
     pywrap_index = ctx.attr.pywrap_index
@@ -1037,9 +1037,12 @@ def _get_common_lib_package_and_name(common_lib_full_name):
 
 def _construct_inverse_common_lib_filters(common_lib_filters):
     inverse_common_lib_filters = {}
+    select_type = type(select({"//conditions:default": []}))
+    list_type = type([])
+
     for common_lib_k, common_lib_v in common_lib_filters.items():
         new_common_lib_k = common_lib_v
-        if type(common_lib_v) == type([]):
+        if type(common_lib_v) == list_type or type(common_lib_v) == select_type:
             new_common_lib_k = "_%s_common_lib_filter" % common_lib_k.rsplit("/", 1)[-1]
             native.cc_library(
                 name = new_common_lib_k,
