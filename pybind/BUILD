@@ -226,8 +226,9 @@ py_library(
 
 pywrap_library(
     name = "pybind_aggregated",
-    common_lib_def_file_filters = {
+    common_lib_def_files_or_filters = {
         "libframework.so.2": "//pybind:framework.json",
+        #        "libframework.so.2": ":_libframework.so.2.def",
     },
     common_lib_filters = {
         "libframework.so.2": select({

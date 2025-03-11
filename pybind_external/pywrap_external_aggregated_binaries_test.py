@@ -34,9 +34,19 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
             ""),
     ]
 
-    pyextension = "pyd" if "nt" in os.name else "so"
-    extension = "dll" if "nt" in os.name else "so"
-    lib_prefix = "" if "nt" in os.name else "lib"
+    pyextension = "so"
+    extension = "so"
+    lib_prefix = "lib"
+    if "nt" in os.name:
+      relative_wheel_locations.extend([
+          ("/pywrap_external/libframework.so.2.if.lib", "/pybind/libframework.so.2.if.lib"),
+          ("/pywrap_external/pywrap_external_aggregated__starlark_only_common.if.lib", ""),
+          ("/pywrap_external/pywrap_external_aggregated_common.if.lib", "/pywrap_external/pywrap_external_aggregated_common.if.lib"),
+      ])
+      pyextension = "pyd"
+      extension = "dll"
+      lib_prefix = ""
+
     expected_relative_wheel_locations = {}
     for k, v in relative_wheel_locations:
       new_k = k.format(pyextension=pyextension, extension=extension,
@@ -54,10 +64,10 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         del wheel_locations[src]
         matched_srcs = src
         break
-      self.assertTrue(matched_srcs, msg="Could not find '" + rel_src + "'")
+      self.assertTrue(matched_srcs, msg="Could not find "" + rel_src + """)
 
-    self.assertEqual(wheel_locations, {}, msg=str(wheel_locations))
+    self.assertEqual(wheel_locations, {})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   PywrapExternalAggregatedBinariesTest().test_pywrap_binaries()

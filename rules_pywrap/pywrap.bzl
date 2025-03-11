@@ -40,7 +40,7 @@ def pywrap_library(
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
         common_lib_version_scripts = {},
-        common_lib_def_file_filters = {},
+        common_lib_def_files_or_filters = {},
         common_lib_linkopts = {},
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
@@ -93,6 +93,8 @@ def pywrap_library(
     starlark_only_common_deps = []
     binaries_data = {}
     starlark_only_binaries_data = {}
+    win_binaries_data = {}
+    win_starlark_only_binaries_data = {}
     internal_binaries = []
 
     common_lib_full_names = []
@@ -120,20 +122,20 @@ def pywrap_library(
         )
 
         win_def_name = "_%s_def" % common_lib_name
-        def_file_filter = common_lib_def_file_filters.get(
+        def_file_or_filter = common_lib_def_files_or_filters.get(
             common_lib_full_name,
             None,
         )
         generated_common_win_def_file(
             name = win_def_name,
             dep = ":%s" % common_split_name,
-            filter = def_file_filter,
+            filter = def_file_or_filter,
         )
 
         linkopts = common_lib_linkopts.get(common_lib_full_name, [])
         ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
         common_cc_binary_name = "%s" % common_lib_name
-        common_import_name = _construct_common_binary(
+        common_import_name, win_import_library_name = _construct_common_binary(
             common_cc_binary_name,
             common_deps + [":%s" % common_split_name],
             linkopts,
@@ -148,11 +150,14 @@ def pywrap_library(
         )
         actual_binaries_data = binaries_data
         actual_common_deps = common_deps
+        actual_win_import_libs_data = win_binaries_data
         if common_lib_full_name == starlark_only_filter_full_name:
             actual_binaries_data = starlark_only_binaries_data
             actual_common_deps = starlark_only_common_deps
+            actual_win_import_libs_data = win_starlark_only_binaries_data
         internal_binaries.append(":%s" % common_cc_binary_name)
         actual_binaries_data[":%s" % common_cc_binary_name] = common_lib_pkg
+        actual_win_import_libs_data[":%s" % win_import_library_name] = common_lib_pkg
         actual_common_deps.append(":%s" % common_import_name)
 
     # 2) Create individual super-thin pywrap libraries, which depend on the
@@ -205,12 +210,22 @@ def pywrap_library(
     #
     pywrap_binaries_name = "%s_common_binaries" % name
     wheel_locations_json_name = ":%s_wheel_locations.json" % pywrap_binaries_name
+
+    win_binaries_data.update(binaries_data)
+    win_starlark_only_binaries_data.update(starlark_only_binaries_data)
+
     _pywrap_binaries(
         name = pywrap_binaries_name,
         collected_pywraps = ":%s" % info_collector_name,
         deps = shared_objects,
-        common_binaries = binaries_data,
-        starlark_only_common_binaries = starlark_only_binaries_data,
+        common_binaries = select({
+            "@bazel_tools//src/conditions:windows": win_binaries_data,
+            "//conditions:default": binaries_data,
+        }),
+        starlark_only_common_binaries = select({
+            "@bazel_tools//src/conditions:windows": win_starlark_only_binaries_data,
+            "//conditions:default": starlark_only_binaries_data,
+        }),
         extension = select({
             "@bazel_tools//src/conditions:windows": ".pyd",
             "//conditions:default": ".so",
@@ -302,7 +317,7 @@ def _construct_common_binary(
         data = data,
     )
 
-    return cc_lib_name
+    return cc_lib_name, if_lib_name
 
 def _pywrap_split_library_impl(ctx):
     pywrap_index = ctx.attr.pywrap_index
@@ -1090,6 +1105,8 @@ def _construct_linkopt_version_script(version_script):
 def _generated_common_win_def_file_impl(ctx):
     win_raw_def_file_name = "%s.gen.def" % ctx.attr.name
     if ctx.attr.filter:
+        if ctx.file.filter.extension != "json":
+            return [DefaultInfo(files = depset(direct = [ctx.file.filter]))]
         win_raw_def_file_name = "%s.raw.gen.def" % ctx.attr.name
     win_raw_def_file = ctx.actions.declare_file(win_raw_def_file_name)
 
