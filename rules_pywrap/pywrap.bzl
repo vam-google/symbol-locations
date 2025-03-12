@@ -96,6 +96,7 @@ def pywrap_library(
     win_binaries_data = {}
     win_starlark_only_binaries_data = {}
     internal_binaries = []
+    win_internal_binaries = []
 
     common_lib_full_names = []
     common_lib_full_names.extend(common_lib_filters.keys())
@@ -150,14 +151,15 @@ def pywrap_library(
         )
         actual_binaries_data = binaries_data
         actual_common_deps = common_deps
-        actual_win_import_libs_data = win_binaries_data
+        actual_win_binaries_data = win_binaries_data
         if common_lib_full_name == starlark_only_filter_full_name:
             actual_binaries_data = starlark_only_binaries_data
             actual_common_deps = starlark_only_common_deps
-            actual_win_import_libs_data = win_starlark_only_binaries_data
+            actual_win_binaries_data = win_starlark_only_binaries_data
         internal_binaries.append(":%s" % common_cc_binary_name)
+        win_internal_binaries.append(":%s" % win_import_library_name)
         actual_binaries_data[":%s" % common_cc_binary_name] = common_lib_pkg
-        actual_win_import_libs_data[":%s" % win_import_library_name] = common_lib_pkg
+        actual_win_binaries_data[":%s" % win_import_library_name] = common_lib_pkg
         actual_common_deps.append(":%s" % common_import_name)
 
     # 2) Create individual super-thin pywrap libraries, which depend on the
@@ -253,7 +255,10 @@ def pywrap_library(
 
     native.filegroup(
         name = name + "_all_binaries",
-        srcs = internal_binaries,
+        srcs = select({
+            "@bazel_tools//src/conditions:windows": internal_binaries + win_internal_binaries,
+            "//conditions:default": internal_binaries,
+        }),
     )
 
 def _construct_common_binary(
