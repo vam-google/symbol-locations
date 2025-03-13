@@ -42,6 +42,7 @@ def pywrap_library(
         common_lib_version_scripts = {},
         common_lib_def_files_or_filters = {},
         common_lib_linkopts = {},
+        enable_common_lib_starlark_only_filter = True,
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
         extra_deps = ["@pybind11//:pybind11"],
@@ -87,6 +88,7 @@ def pywrap_library(
         pywrap_lib_exclusion_filter = pywrap_lib_exclusion_filter,
         common_lib_filters = inverse_common_lib_filters,
         starlark_only_filter_name = starlark_only_filter_full_name,
+        enable_common_lib_starlark_only_filter = enable_common_lib_starlark_only_filter,
     )
 
     common_deps = [] + extra_deps
@@ -543,15 +545,16 @@ def _linker_input_filters_impl(ctx):
     starlark_only_filter = {}
 
     if ctx.attr.starlark_only_filter_name:
-        for pw in pywrap_infos:
-            if pw.starlark_only:
-                for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
-                    starlark_only_filter[li] = li.owner
+        if ctx.attr.enable_common_lib_starlark_only_filter:
+            for pw in pywrap_infos:
+                if pw.starlark_only:
+                    for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
+                        starlark_only_filter[li] = li.owner
 
-        for pw in pywrap_infos:
-            if not pw.starlark_only:
-                for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
-                    starlark_only_filter.pop(li, None)
+            for pw in pywrap_infos:
+                if not pw.starlark_only:
+                    for li in pw.cc_info.linking_context.linker_inputs.to_list()[1:]:
+                        starlark_only_filter.pop(li, None)
 
         common_lib_filters[ctx.attr.starlark_only_filter_name] = starlark_only_filter
 
@@ -603,6 +606,10 @@ _linker_input_filters = rule(
             default = {},
         ),
         "starlark_only_filter_name": attr.string(mandatory = False),
+        "enable_common_lib_starlark_only_filter": attr.bool(
+            mandatory = False,
+            default = True,
+        ),
     },
     implementation = _linker_input_filters_impl,
 )
