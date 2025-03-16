@@ -24,6 +24,7 @@ build:linux --cxxopt=-std=c++17
 build:linux --host_cxxopt=-std=c++17
 
 build:windows --@com_google_protobuf//:use_dlls=True
+build:windows --@com_google_absl//absl:use_dlls
 build:windows --compiler=clang-cl
 build:windows --linkopt=/demangle:no
 build:windows --host_linkopt=/demangle:no
