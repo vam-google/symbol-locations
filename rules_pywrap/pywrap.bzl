@@ -280,11 +280,11 @@ def _construct_common_binary(
         data,
         version = ""):
     version_str = ".%s" % version if version else version
-    linux_binary_name = "{}.so{}".format(name, version_str)
+    linux_binary_name = "lib{}.so{}".format(name, version_str)
     win_binary_name = "{}{}.dll".format(name, version_str)
-    darwin_binary_name = "{}{}.dylib".format(name, version_str)
+    darwin_binary_name = "lib{}{}.dylib".format(name, version_str)
 
-    actual_linkopts = _construct_linkopt_soname(name) + _construct_linkopt_rpaths(
+    linux_linkopts = _construct_linkopt_soname(linux_binary_name) + _construct_linkopt_rpaths(
         dependency_common_lib_packages,
         dependent_common_lib_package,
     ) + _construct_linkopt_version_script(version_script)
@@ -297,7 +297,7 @@ def _construct_common_binary(
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
             "@bazel_tools//src/conditions:darwin": [],
-            "//conditions:default": actual_linkopts,
+            "//conditions:default": linux_linkopts,
         }),
         testonly = testonly,
         compatible_with = compatible_with,
