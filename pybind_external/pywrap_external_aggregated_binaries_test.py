@@ -49,7 +49,6 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
       lib_prefix = ""
     elif "Darwin" in system:
       extension = "dylib"
-      lib_prefix = ""
       relative_wheel_locations.extend([
           ("/pywrap_external/libframework.2.dylib", "/pybind/libframework.2.dylib"),
       ])
