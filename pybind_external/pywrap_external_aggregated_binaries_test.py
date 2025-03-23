@@ -39,10 +39,10 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
     system = platform.system()
     if "Windows" in system:
       relative_wheel_locations.extend([
-          ("/pywrap_external/libframework.2.dll", "/pybind/libframework.2.dll"),
-          ("/pywrap_external/libframework.2.dll.if.lib", "/pybind/libframework.2.dll.if.lib"),
-          ("/pywrap_external/pywrap_external_aggregated__starlark_only_common.if.lib", ""),
-          ("/pywrap_external/pywrap_external_aggregated_common.if.lib", "/pywrap_external/pywrap_external_aggregated_common.if.lib"),
+          ("/pywrap_external/framework.2.dll", "/pybind/framework.2.dll"),
+          ("/pywrap_external/framework.2.dll.if.lib", "/pybind/framework.2.dll.if.lib"),
+          ("/pywrap_external/pywrap_external_aggregated__starlark_only_common.dll.if.lib", ""),
+          ("/pywrap_external/pywrap_external_aggregated_common.dll.if.lib", "/pywrap_external/pywrap_external_aggregated_common.dll.if.lib"),
       ])
       pyextension = "pyd"
       extension = "dll"
