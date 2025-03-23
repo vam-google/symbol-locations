@@ -39,6 +39,7 @@ def pywrap_library(
         pywrap_lib_filter = None,
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
+        common_lib_versions = {},
         common_lib_version_scripts = {},
         common_lib_def_files_or_filters = {},
         common_lib_linkopts = {},
@@ -138,6 +139,7 @@ def pywrap_library(
         linkopts = common_lib_linkopts.get(common_lib_full_name, [])
         ver_script = common_lib_version_scripts.get(common_lib_full_name, None)
         common_cc_binary_name = "%s" % common_lib_name
+
         common_import_name, win_import_library_name = _construct_common_binary(
             common_cc_binary_name,
             common_deps + [":%s" % common_split_name],
@@ -149,7 +151,8 @@ def pywrap_library(
             binaries_data.values(),
             common_lib_pkg,
             ver_script,
-            data = [":%s" % common_split_name],
+            [":%s" % common_split_name],
+            common_lib_versions.get(common_lib_full_name, ""),
         )
         actual_binaries_data = binaries_data
         actual_common_deps = common_deps
@@ -274,20 +277,42 @@ def _construct_common_binary(
         dependency_common_lib_packages,
         dependent_common_lib_package,
         version_script,
-        data):
+        data,
+        version = ""):
+    version_str = ".%s" % version if version else version
+    linux_binary_name = "{}.so{}".format(name, version_str)
+    win_binary_name = "{}{}.dll".format(name, version_str)
+    darwin_binary_name = "{}{}.dylib".format(name, version_str)
+
     actual_linkopts = _construct_linkopt_soname(name) + _construct_linkopt_rpaths(
         dependency_common_lib_packages,
         dependent_common_lib_package,
     ) + _construct_linkopt_version_script(version_script)
 
     native.cc_binary(
-        name = name,
+        name = linux_binary_name,
         deps = deps + ([version_script] if version_script else []),
         linkstatic = True,
         linkshared = True,
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
+            "@bazel_tools//src/conditions:darwin": [],
             "//conditions:default": actual_linkopts,
+        }),
+        testonly = testonly,
+        compatible_with = compatible_with,
+        local_defines = local_defines,
+    )
+
+    native.cc_binary(
+        name = win_binary_name,
+        deps = deps,
+        linkstatic = True,
+        linkshared = True,
+        linkopts = linkopts + select({
+            "@bazel_tools//src/conditions:windows": [],
+            "@bazel_tools//src/conditions:darwin": [],
+            "//conditions:default": [],
         }),
         testonly = testonly,
         compatible_with = compatible_with,
@@ -295,19 +320,45 @@ def _construct_common_binary(
         local_defines = local_defines,
     )
 
-    if_lib_name = "%s_if_lib" % name
+    native.cc_binary(
+        name = darwin_binary_name,
+        deps = deps,
+        linkstatic = True,
+        linkshared = True,
+        linkopts = linkopts + select({
+            "@bazel_tools//src/conditions:windows": [],
+            "@bazel_tools//src/conditions:darwin": [],
+            "//conditions:default": [],
+        }),
+        testonly = testonly,
+        compatible_with = compatible_with,
+        local_defines = local_defines,
+    )
+
+
+    if_lib_name = "{}{}_if_lib".format(name, version_str)
     native.filegroup(
         name = if_lib_name,
-        srcs = [":%s" % name],
+        srcs = [":%s" % win_binary_name],
         output_group = "interface_library",
         testonly = testonly,
         compatible_with = compatible_with,
     )
 
+    native.alias(
+        name = name,
+        actual = select({
+            "@bazel_tools//src/conditions:windows": ":%s" % win_binary_name,
+            "@bazel_tools//src/conditions:darwin": ":%s" % darwin_binary_name,
+            "//conditions:default": ":%s" % linux_binary_name,
+        }),
+    )
+
     import_name = "%s_import" % name
+
     native.cc_import(
         name = import_name,
-        shared_library = ":%s" % name,
+        shared_library = "%s" % name,
         interface_library = select({
             "@bazel_tools//src/conditions:windows": ":%s" % if_lib_name,
             "//conditions:default": None,
@@ -649,6 +700,7 @@ def _generated_win_def_file_impl(ctx):
             owner = pywrap_info.owner.name,
             win_def_file = win_def_file.path,
         ),
+        mnemonic = "PywrapWinDefFile",
         outputs = [win_def_file],
     )
 
@@ -692,6 +744,7 @@ def pybind_extension(
         local_defines = ["PROTOBUF_USE_DLLS", "ABSL_CONSUME_DLL"],
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
+            "@bazel_tools//src/conditions:darwin": [],
             "//conditions:default": _construct_linkopt_rpaths(
                 common_lib_packages + [native.package_name()],
                 native.package_name(),
@@ -943,6 +996,7 @@ def _pywrap_binaries_impl(ctx):
                 original = original_binary_file.path,
                 final = final_binary.path,
             ),
+            mnemonic = "PywrapBinaryRename",
             outputs = [final_binary],
         )
 
@@ -1136,6 +1190,7 @@ def _generated_common_win_def_file_impl(ctx):
         executable = ctx.executable.parser,
         arguments = [args, obj_files_args],
         outputs = [win_raw_def_file],
+        mnemonic = "WinDefFileParse",
     )
 
     win_def_file = win_raw_def_file
@@ -1154,6 +1209,7 @@ def _generated_common_win_def_file_impl(ctx):
             executable = ctx.executable.filter_tool,
             arguments = [filter_args],
             outputs = [win_def_file],
+            mnemonic = "WinDefFileFilter",
         )
 
     return [DefaultInfo(files = depset(direct = [win_def_file]))]

@@ -23,8 +23,8 @@ def pywrap_repositories():
 
     http_archive(
         name = "rules_python",
-        strip_prefix = "rules_python-0.34.0",
-        url = "https://github.com/bazelbuild/rules_python/releases/download/0.34.0/rules_python-0.34.0.tar.gz",
+        strip_prefix = "rules_python-0.39.0",
+        url = "https://github.com/bazelbuild/rules_python/releases/download/0.39.0/rules_python-0.39.0.tar.gz",
     )
 
     # We do not need these and do not use them, but without them bazel query fails

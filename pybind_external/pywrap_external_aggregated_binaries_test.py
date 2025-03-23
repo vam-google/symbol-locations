@@ -1,4 +1,4 @@
-import os
+import platform
 import unittest
 import json
 import argparse
@@ -26,7 +26,6 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         ("/pywrap_external/pybind_cc_only.{pyextension}", ""),
         ("/pywrap_external/pybind_with_starlark_only.{pyextension}", ""),
         ("/pybind/pybind_with_starlark_only.py", ""),
-        ("/pywrap_external/libframework.so.2", "/pybind/libframework.so.2"),
         ("/pywrap_external/{lib}pywrap_external_aggregated_common.{extension}",
          "/pywrap_external/{lib}pywrap_external_aggregated_common.{extension}"),
         (
@@ -37,15 +36,27 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
     pyextension = "so"
     extension = "so"
     lib_prefix = "lib"
-    if "nt" in os.name:
+    system = platform.system()
+    if "Windows" in system:
       relative_wheel_locations.extend([
-          ("/pywrap_external/libframework.so.2.if.lib", "/pybind/libframework.so.2.if.lib"),
+          ("/pywrap_external/libframework.2.dll", "/pybind/libframework.2.dll"),
+          ("/pywrap_external/libframework.2.dll.if.lib", "/pybind/libframework.2.dll.if.lib"),
           ("/pywrap_external/pywrap_external_aggregated__starlark_only_common.if.lib", ""),
           ("/pywrap_external/pywrap_external_aggregated_common.if.lib", "/pywrap_external/pywrap_external_aggregated_common.if.lib"),
       ])
       pyextension = "pyd"
       extension = "dll"
       lib_prefix = ""
+    elif "Darwin" in system:
+      extension = "dylib"
+      lib_prefix = ""
+      relative_wheel_locations.extend([
+          ("/pywrap_external/libframework.2.dylib", "/pybind/libframework.2.dylib"),
+      ])
+    else:
+      relative_wheel_locations.extend([
+          ("/pywrap_external/libframework.so.2", "/pybind/libframework.so.2"),
+      ])
 
     expected_relative_wheel_locations = {}
     for k, v in relative_wheel_locations:
@@ -64,7 +75,7 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         del wheel_locations[src]
         matched_srcs = src
         break
-      self.assertTrue(matched_srcs, msg="Could not find "" + rel_src + """)
+      self.assertTrue(matched_srcs, msg="Could not find " + rel_src)
 
     self.assertEqual(wheel_locations, {})
 

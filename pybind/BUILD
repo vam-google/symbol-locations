@@ -226,24 +226,28 @@ py_library(
 
 pywrap_library(
     name = "pybind_aggregated",
+    common_lib_versions = {
+        "libframework": "2",
+    },
     common_lib_def_files_or_filters = {
-        "libframework.so.2": "//pybind:framework.json",
+        "libframework": "//pybind:framework.json",
         #        "libframework.so.2": ":_libframework.so.2.def",
     },
     common_lib_filters = {
-        "libframework.so.2": select({
+        "libframework": select({
             "@bazel_tools//src/conditions:windows": [":fifth_library"],
             "//conditions:default": [":fifth_library"],
         }),
     },
     common_lib_linkopts = {
-        "libframework.so.2": select({
+        "libframework": select({
             "@bazel_tools//src/conditions:windows": [],
+            "@bazel_tools//src/conditions:darwin": [],
             "//conditions:default": ["-z defs"],
         }),
     },
     common_lib_version_scripts = {
-        "libframework.so.2": "//pybind:framework.lds",
+        "libframework": "//pybind:framework.lds",
     },
     pywrap_count = 3,
     pywrap_lib_filter = ":third_library",
@@ -266,7 +270,7 @@ pywrap_common_library(
 pywrap_common_library(
     name = "common_pybind_aggregated_framework",
     dep = ":pybind_aggregated",
-    filter_name = "libframework.so.2",
+    filter_name = "libframework",
 )
 
 pywrap_binaries(
