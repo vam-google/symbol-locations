@@ -279,19 +279,32 @@ def _construct_common_binary(
         version_script,
         data,
         version = ""):
-    version_str = ".%s" % version if version else version
+    version_str = ".{}".format(version) if version else version
     linux_binary_name = "lib{}.so{}".format(name, version_str)
     win_binary_name = "{}{}.dll".format(name, version_str)
     darwin_binary_name = "lib{}{}.dylib".format(name, version_str)
 
-    linux_linkopts = _construct_linkopt_soname(linux_binary_name) + _construct_linkopt_rpaths(
+    actual_version_script = None
+    if version_script:
+        actual_version_script = "{}_version_script".format(name)
+        native.alias(
+            name = actual_version_script,
+            actual = version_script,
+        )
+        actual_version_script = ":{}".format(actual_version_script)
+
+    linux_linkopts = _construct_linkopt_soname(
+        linux_binary_name,
+        False,
+    ) + _construct_linkopt_rpaths(
         dependency_common_lib_packages,
         dependent_common_lib_package,
-    ) + _construct_linkopt_version_script(version_script)
+        False,
+    ) + _construct_linkopt_version_script(actual_version_script, False)
 
     native.cc_binary(
         name = linux_binary_name,
-        deps = deps + ([version_script] if version_script else []),
+        deps = deps + ([actual_version_script] if actual_version_script else []),
         linkstatic = True,
         linkshared = True,
         linkopts = linkopts + select({
@@ -320,14 +333,23 @@ def _construct_common_binary(
         local_defines = local_defines,
     )
 
+    darwin_linkopts = _construct_linkopt_soname(
+        darwin_binary_name,
+        True,
+    ) + _construct_linkopt_rpaths(
+        dependency_common_lib_packages,
+        dependent_common_lib_package,
+        True,
+    ) + _construct_linkopt_version_script(actual_version_script, True)
+
     native.cc_binary(
         name = darwin_binary_name,
-        deps = deps,
+        deps = deps + ([actual_version_script] if actual_version_script else []),
         linkstatic = True,
         linkshared = True,
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
-            "@bazel_tools//src/conditions:darwin": [],
+            "@bazel_tools//src/conditions:darwin": darwin_linkopts,
             "//conditions:default": [],
         }),
         testonly = testonly,
@@ -744,10 +766,15 @@ def pybind_extension(
         local_defines = ["PROTOBUF_USE_DLLS", "ABSL_CONSUME_DLL"],
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
-            "@bazel_tools//src/conditions:darwin": [],
+            "@bazel_tools//src/conditions:darwin": _construct_linkopt_rpaths(
+                common_lib_packages + [native.package_name()],
+                native.package_name(),
+                True,
+            ),
             "//conditions:default": _construct_linkopt_rpaths(
                 common_lib_packages + [native.package_name()],
                 native.package_name(),
+                False,
             ),
         }),
         **kwargs
@@ -1133,18 +1160,25 @@ def _construct_inverse_common_lib_filters(common_lib_filters):
         inverse_common_lib_filters[new_common_lib_k] = common_lib_k
     return inverse_common_lib_filters
 
-def _construct_linkopt_soname(name):
+def _construct_linkopt_soname(name, darwin):
     soname = name.rsplit("/", 1)[1] if "/" in name else name
-    soname = soname if name.startswith("lib") else ("lib%s" % soname)
-    if ".so" not in name:
-        soname += ".so"
-    return ["-Wl,-soname,%s" % soname]
+    soname = soname if name.startswith("lib") else ("lib{}".format(soname))
+    extension = ".so"
+    arg_name = "-soname"
+    if darwin:
+        extension = ".dylib"
+        arg_name = "-install_name"
+        soname = "@rpath/" + soname
+    if extension not in name:
+        soname += extension
+    return ["-Wl,{},{}".format(arg_name, soname)]
 
-def _construct_linkopt_rpaths(dependency_lib_packages, dependent_lib_package):
+def _construct_linkopt_rpaths(dependency_lib_packages, dependent_lib_package, darwin):
     linkopts = {}
+    origin = "@loader_path" if darwin else "$$ORIGIN"
     for dependency_lib_package in dependency_lib_packages:
         origin_pkg = _construct_rpath(dependency_lib_package, dependent_lib_package)
-        linkopts["-rpath,'$$ORIGIN/%s'" % origin_pkg] = True
+        linkopts["-rpath,'{}/{}'".format(origin, origin_pkg)] = True
     return ["-Wl," + ",".join(linkopts.keys())] if linkopts else []
 
 def _construct_rpath(dependency_lib_package, dependent_lib_package):
@@ -1163,10 +1197,11 @@ def _construct_rpath(dependency_lib_package, dependent_lib_package):
 
     return levels_up + remaining_pkg
 
-def _construct_linkopt_version_script(version_script):
+def _construct_linkopt_version_script(version_script, darwin):
     if not version_script:
         return []
-    return ["-Wl,--version-script,$(location {})".format(version_script)]
+    arg_name = "-exported_symbols_list" if darwin else "--version-script"
+    return ["-Wl,{},$(location {})".format(arg_name, version_script)]
 
 def _generated_common_win_def_file_impl(ctx):
     win_raw_def_file_name = "%s.gen.def" % ctx.attr.name

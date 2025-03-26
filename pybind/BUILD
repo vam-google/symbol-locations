@@ -247,7 +247,11 @@ pywrap_library(
         }),
     },
     common_lib_version_scripts = {
-        "framework": "//pybind:framework.lds",
+        "framework": select({
+            "@bazel_tools//src/conditions:windows": None,
+            "@bazel_tools//src/conditions:darwin": ":darwin_framework.lds",
+            "//conditions:default": ":linux_framework.lds",
+        }),
     },
     pywrap_count = 3,
     pywrap_lib_filter = ":third_library",
