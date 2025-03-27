@@ -472,7 +472,7 @@ def _pywrap_common_split_library_impl(ctx):
     else:
         libs_to_include = filters.common_lib_filters[ctx.attr.common_lib_full_name]
 
-    user_link_flags = {}
+    user_link_flags = []
     dynamic_lib_filter = filters.dynamic_lib_filter
     default_runfiles = ctx.runfiles()
     for pw in pywrap_infos:
@@ -483,8 +483,7 @@ def _pywrap_common_split_library_impl(ctx):
                 continue
             if include_all_not_excluded or (li in libs_to_include) or li in dynamic_lib_filter:
                 split_linker_inputs.append(li)
-                for user_link_flag in li.user_link_flags:
-                    user_link_flags[user_link_flag] = True
+                user_link_flags.extend(li.user_link_flags)
                 if not pw_runfiles_merged:
                     default_runfiles = default_runfiles.merge(pw.default_runfiles)
                     pw_runfiles_merged = True
@@ -492,7 +491,7 @@ def _pywrap_common_split_library_impl(ctx):
     return _construct_split_library_cc_info(
         ctx,
         split_linker_inputs,
-        list(user_link_flags.keys()),
+        user_link_flags,
         [],
         default_runfiles,
         ctx.attr.collect_objects,
@@ -536,7 +535,7 @@ def _construct_split_library_cc_info(
     linker_input = cc_common.create_linker_input(
         owner = ctx.label,
         libraries = depset(direct = dependency_libraries),
-        user_link_flags = depset(direct = user_link_flags),
+        user_link_flags = user_link_flags,
     )
 
     linking_context = cc_common.create_linking_context(
