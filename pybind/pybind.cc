@@ -19,7 +19,7 @@ PYBIND11_MODULE(pybind, m) {
 
   auto subM = m.def_submodule("sub", "submodule");
   subM.def("second_func", &second_func, "");
-  auto subSubM = subM.def_submodule("sub_sub", "sub submodule");
+  auto subSubM = subM.def_submodule("_sub_private", "sub submodule");
   subSubM.def("sub_sub_func", &sub_sub_func, "");
-  subSubM.def("_sub_sub_private_func", &sub_sub_func, "private sub func");
+  subSubM.def("_sub_private_private_func", &sub_sub_func, "private sub func");
 }

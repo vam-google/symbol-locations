@@ -2,11 +2,7 @@ from sys import modules
 from types import ModuleType
 
 def __update_globals(new_import_path, pywrap_m):
-  if hasattr(pywrap_m, '__all__'):
-    all_names = pywrap_m.__all__
-  else:
-    all_names = [name for name in dir(pywrap_m) if not name.startswith('_')]
-
+  all_names = pywrap_m.__all__ if hasattr(pywrap_m, '__all__') else dir(pywrap_m)
   modules[new_import_path] = pywrap_m
   for name in all_names:
     sub_pywrap = getattr(pywrap_m, name)
