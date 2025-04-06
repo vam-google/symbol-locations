@@ -17,6 +17,7 @@ pywrap_library(
         "//pybind",
         "//pybind:pybind_cc_only",
         "//pybind:pybind_copy",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
 )
 

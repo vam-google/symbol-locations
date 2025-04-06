@@ -8,6 +8,7 @@ pywrap_library(
         "//pybind",
         "//pybind:pybind_cc_only",
         "//pybind:pybind_copy",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
 )
 
@@ -22,6 +23,7 @@ py_test(
     visibility = ["//:__pkg__"],
     deps = [
         ":pybind_external_aggregated",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
 )
 
@@ -32,6 +34,7 @@ py_test(
     visibility = ["//:__pkg__"],
     deps = [
         "//pywrap_external:pywrap_external_aggregated",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
 )
 

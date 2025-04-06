@@ -132,9 +132,6 @@ cc_test(
 pybind_extension(
     name = "pybind",
     srcs = ["pybind.cc"],
-    additional_exported_symbols = [
-        "_EXTRA_SYMBOL",
-    ],
     common_lib_packages = [
         "",
         "pywrap_external/python",  # non-existent package to test that its Ok
@@ -154,9 +151,6 @@ pybind_extension(
 pybind_extension(
     name = "pybind_copy",
     srcs = ["pybind_copy.cc"],
-    additional_exported_symbols = [
-        "_EXTRA_SYMBOL",
-    ],
     common_lib_packages = [
         "",
         "pywrap_external",
@@ -253,7 +247,7 @@ pywrap_library(
             "//conditions:default": ":linux_framework.lds",
         }),
     },
-    pywrap_count = 3,
+    pywrap_count = 4,
     pywrap_lib_filter = ":third_library",
     starlark_only_pywrap_count = 1,
     visibility = ["//visibility:public"],
@@ -263,6 +257,7 @@ pywrap_library(
         ":py_library_3",
         ":py_library_4",
         ":pybind_with_starlark_only",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
 )
 
@@ -291,7 +286,9 @@ py_test(
         # not needed, since duplicated, but passed to check that duplication is
         # ok
         "py_library_1",
+        "//pybind/sub_pybind:relative_import_lib",
     ],
+#    legacy_create_init = False,
 )
 
 py_test(

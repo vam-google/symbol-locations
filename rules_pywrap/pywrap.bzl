@@ -752,6 +752,8 @@ def pybind_extension(
         linkopts = [],
         starlark_only = False,
         **kwargs):
+    # For backward compatibility that I don't want to mess with
+    _ignore = [additional_exported_symbols]
     cc_library_name = "_%s_cc_library" % name
     native.cc_library(
         name = cc_library_name,
@@ -793,7 +795,6 @@ def pybind_extension(
             name = name,
             deps = ["%s" % cc_library_name],
             common_lib_packages = common_lib_packages,
-            additional_exported_symbols = additional_exported_symbols,
             starlark_only = starlark_only,
             testonly = testonly,
             compatible_with = compatible_with,
@@ -807,9 +808,6 @@ def _pywrap_info_wrapper_impl(ctx):
 
     py_stub = ctx.actions.declare_file("%s.py" % ctx.attr.name)
     substitutions = {}
-
-    additional_exported_symbols = ctx.attr.additional_exported_symbols
-
     py_pkgs = []
     for pkg in ctx.attr.common_lib_packages:
         if pkg:
@@ -818,10 +816,6 @@ def _pywrap_info_wrapper_impl(ctx):
     if py_pkgs:
         val = "imports_paths = %s # template_val" % py_pkgs
         substitutions["imports_paths = []  # template_val"] = val
-
-    if additional_exported_symbols:
-        val = "extra_names = %s # template_val" % additional_exported_symbols
-        substitutions["extra_names = []  # template_val"] = val
 
     ctx.actions.expand_template(
         template = ctx.file.py_stub_src,
@@ -853,10 +847,6 @@ _pywrap_info_wrapper = rule(
         "py_stub_src": attr.label(
             allow_single_file = True,
             default = Label("//rules_pywrap:pybind_extension.py.tpl"),
-        ),
-        "additional_exported_symbols": attr.string_list(
-            mandatory = False,
-            default = [],
         ),
         "starlark_only": attr.bool(mandatory = False, default = False),
     },

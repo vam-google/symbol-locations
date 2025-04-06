@@ -31,6 +31,9 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
         (
             "/pywrap_external/{lib}pywrap_external_aggregated__starlark_only_common.{extension}",
             ""),
+        ('/pybind/sub_pybind/nested_pybind.py', ''),
+        ('/pywrap_external/nested_pybind.{pyextension}',
+         '/pybind/sub_pybind/nested_pybind.{pyextension}'),
     ]
 
     pyextension = "so"
@@ -40,9 +43,13 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
     if "Windows" in system:
       relative_wheel_locations.extend([
           ("/pywrap_external/framework.2.dll", "/pybind/framework.2.dll"),
-          ("/pywrap_external/framework.2.dll.if.lib", "/pybind/framework.2.dll.if.lib"),
-          ("/pywrap_external/pywrap_external_aggregated__starlark_only_common.dll.if.lib", ""),
-          ("/pywrap_external/pywrap_external_aggregated_common.dll.if.lib", "/pywrap_external/pywrap_external_aggregated_common.dll.if.lib"),
+          ("/pywrap_external/framework.2.dll.if.lib",
+           "/pybind/framework.2.dll.if.lib"),
+          (
+              "/pywrap_external/pywrap_external_aggregated__starlark_only_common.dll.if.lib",
+              ""),
+          ("/pywrap_external/pywrap_external_aggregated_common.dll.if.lib",
+           "/pywrap_external/pywrap_external_aggregated_common.dll.if.lib"),
       ])
       pyextension = "pyd"
       extension = "dll"
@@ -50,7 +57,8 @@ class PywrapExternalAggregatedBinariesTest(unittest.TestCase):
     elif "Darwin" in system:
       extension = "dylib"
       relative_wheel_locations.extend([
-          ("/pywrap_external/libframework.2.dylib", "/pybind/libframework.2.dylib"),
+          ("/pywrap_external/libframework.2.dylib",
+           "/pybind/libframework.2.dylib"),
       ])
     else:
       relative_wheel_locations.extend([
