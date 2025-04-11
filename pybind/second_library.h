@@ -8,6 +8,18 @@ __declspec(dllimport) extern int second_global;
 extern int second_global;
 #endif
 
+enum SharedEnum {
+  SHARED_VAL = 1,
+  SHARED_VAL_COPY = 2,
+};
+
+class SharedClass {
+ public:
+  SharedClass() = default;
+  ~SharedClass() = default;
+  int foo(int x);
+};
+
 
 int second_func(int x);
 int second_global_func();

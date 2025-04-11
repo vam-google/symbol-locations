@@ -6,12 +6,18 @@ import pybind.pybind
 import pybind.pybind_copy
 from pybind.pybind import _EXTRA_SYMBOL as REGULAR_EXTRA_SYMBOL
 from pybind.pybind_copy import _EXTRA_SYMBOL as REGULAR_COPY_EXTRA_SYMBOL
+
 from pybind.pybind.sub import second_func as sub_second_func
 import pybind.pybind.sub
 from pybind.pybind.sub._sub_private import *
 from pybind.pybind.sub._sub_private import _sub_private_private_func
 from pybind.sub_pybind.relative_import_lib import call_nested_pyind_func
 from pybind.sub_pybind.relative_import_lib import sub_sub_private_func
+
+from pybind.pybind.sub import SharedClass
+from pybind.pybind_copy.sub import SharedClass as SharedClassCopy
+from pybind.pybind.sub import PybindEnum
+from pybind.pybind_copy.sub import PybindEnum as PybindEnumCopy
 
 class PybindTest(unittest.TestCase):
   def _read_file(self, filename, mode="r"):
@@ -62,6 +68,13 @@ class PybindTest(unittest.TestCase):
     print("15: Nested pybinds and relative imports")
     self.assertEqual(call_nested_pyind_func(6), 3)
     self.assertEqual(sub_sub_private_func(5), 10)
+
+    print("16: nested classes and enums")
+    self.assertEqual(PybindEnumCopy.SHARED_VAL, 1)
+    self.assertEqual(PybindEnumCopy.SHARED_VAL_COPY, 2)
+    self.assertEqual(SharedClass().foo(3), 6)
+    self.assertEqual(SharedClassCopy().foo(3), 6)
+
 
 if __name__ == '__main__':
   unittest.main()

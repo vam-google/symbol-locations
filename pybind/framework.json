@@ -1,7 +1,8 @@
 {
   "global": [
     "*second_*",
-    "*fifth_*"
+    "*fifth_*",
+    "*SharedClass*",
   ],
   "local": [
     "*"

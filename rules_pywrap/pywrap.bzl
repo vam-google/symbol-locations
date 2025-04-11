@@ -46,7 +46,7 @@ def pywrap_library(
         enable_common_lib_starlark_only_filter = True,
         pywrap_count = None,
         starlark_only_pywrap_count = 0,
-        extra_deps = ["@pybind11//:pybind11"],
+        extra_deps = ["@pybind11//:pybind11", "@nanobind//:nanobind"],
         visibility = None,
         testonly = None,
         compatible_with = None):
@@ -748,7 +748,7 @@ def pybind_extension(
         testonly = None,
         compatible_with = None,
         additional_exported_symbols = [],
-        default_deps = ["@pybind11//:pybind11"],
+        default_deps = ["@pybind11//:pybind11", "@nanobind//:nanobind"],
         linkopts = [],
         starlark_only = False,
         **kwargs):

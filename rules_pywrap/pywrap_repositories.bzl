@@ -9,6 +9,22 @@ def pywrap_repositories():
     )
 
     http_archive(
+        name = "robin_map",
+        strip_prefix = "robin-map-1.3.0",
+        sha256 = "a8424ad3b0affd4c57ed26f0f3d8a29604f0e1f2ef2089f497f614b1c94c7236",
+        urls = ["https://github.com/Tessil/robin-map/archive/refs/tags/v1.3.0.tar.gz"],
+        build_file = Label("//rules_pywrap:robin_map.BUILD"),
+    )
+
+    http_archive(
+        name = "nanobind",
+        strip_prefix = "nanobind-b4b933111fa61815f3f5b509fde80c24f029ac26",
+        sha256 = "d1d8575f2bf76cc2ca357ac5521daa2f1bcf5397231d856f4ce66ba0670ac928",
+        urls = ["https://github.com/wjakob/nanobind/archive/b4b933111fa61815f3f5b509fde80c24f029ac26.tar.gz"],
+        build_file = Label("//rules_pywrap:nanobind.BUILD"),
+    )
+
+    http_archive(
         name = "pybind11_bazel",
         strip_prefix = "pybind11_bazel-faf56fb3df11287f26dbc66fdedf60a2fc2c6631",
         urls = ["https://github.com/pybind/pybind11_bazel/archive/faf56fb3df11287f26dbc66fdedf60a2fc2c6631.zip"],
@@ -33,7 +49,7 @@ def pywrap_repositories():
         name = "com_google_absl",
         sha256 = "0320586856674d16b0b7a4d4afb22151bdc798490bb7f295eddd8f6a62b46fea",
         patch_args = ["-p1"],
-        patches = ["//rules_pywrap:absl.patch"],
+        patches = [Label("//rules_pywrap:absl.patch")],
         strip_prefix = "abseil-cpp-fb3621f4f897824c0dbe0615fa94543df6192f30",
         urls = ["https://github.com/abseil/abseil-cpp/archive/fb3621f4f897824c0dbe0615fa94543df6192f30.tar.gz"],
     )
@@ -57,7 +73,7 @@ def pywrap_repositories():
     http_archive(
         name = "com_google_protobuf",
         patch_args = ["-p1"],
-        patches = ["//rules_pywrap:protobuf.patch"],
+        patches = [Label("//rules_pywrap:protobuf.patch")],
         sha256 = "f66073dee0bc159157b0bd7f502d7d1ee0bc76b3c1eac9836927511bdc4b3fc1",
         strip_prefix = "protobuf-3.21.9",
         urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.21.9.zip"],

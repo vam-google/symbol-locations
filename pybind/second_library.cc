@@ -11,3 +11,7 @@ int second_func(int x) {
 int second_global_func() {
   return second_global;
 }
+
+int SharedClass::foo(int x) {
+  return x << 1;
+}
