@@ -36,6 +36,7 @@ def pywrap_library(
         name,
         deps,
         starlark_only_deps = [],
+        # Makes no sense for wrapped PyInit_ case, and should not be used
         pywrap_lib_filter = None,
         pywrap_lib_exclusion_filter = None,
         common_lib_filters = {},
@@ -738,7 +739,7 @@ _generated_win_def_file = rule(
     implementation = _generated_win_def_file_impl,
 )
 
-def pybind_extension(
+def python_extension(
         name,
         deps,
         srcs = [],
@@ -748,23 +749,57 @@ def pybind_extension(
         testonly = None,
         compatible_with = None,
         additional_exported_symbols = [],
-        default_deps = ["@pybind11//:pybind11"],
+        default_deps = [],
         linkopts = [],
         starlark_only = False,
+        local_defines = [],
+        wrap_py_init = None,
         **kwargs):
     # For backward compatibility that I don't want to mess with
     _ignore = [additional_exported_symbols]
-    cc_library_name = "_%s_cc_library" % name
+
+    if not srcs:
+        wrap_py_init = False
+
+    cc_library_deps = deps + default_deps
+    wrapped_cc_library_name = "_%s__wrapped__cc_library" % name
+    # If no wrapping is requested, this target will simply remain unused and
+    # never compiled
     native.cc_library(
-        name = cc_library_name,
-        deps = deps + default_deps,
+        name = wrapped_cc_library_name,
+        deps = cc_library_deps,
         srcs = srcs,
         linkstatic = True,
         alwayslink = True,
         visibility = visibility,
         testonly = testonly,
         compatible_with = compatible_with,
-        local_defines = ["PROTOBUF_USE_DLLS", "ABSL_CONSUME_DLL"],
+        linkopts = linkopts,
+        local_defines = local_defines + _if_wrapped_py_init(wrap_py_init,
+            ["PyInit_{}=Wrapped_PyInit_{}".format(name, name)],
+        ),
+        **kwargs
+    )
+
+    cc_library_name = "_%s_cc_library" % name
+    native.cc_library(
+        name = cc_library_name,
+        deps = _if_wrapped_py_init(wrap_py_init,
+            [":{}".format(wrapped_cc_library_name)],
+            cc_library_deps,
+        ),
+        srcs = _if_wrapped_py_init(wrap_py_init,
+            [Label("//rules_pywrap:wrapped_py_init.cc")],
+            srcs,
+        ),
+        linkstatic = True,
+        alwayslink = True,
+        visibility = visibility,
+        testonly = testonly,
+        compatible_with = compatible_with,
+        local_defines = local_defines + _if_wrapped_py_init(wrap_py_init,
+            ["WRAPPED_PY_MODULE_NAME={}".format(name)],
+        ),
         linkopts = linkopts + select({
             "@bazel_tools//src/conditions:windows": [],
             "@bazel_tools//src/conditions:darwin": _construct_linkopt_rpaths(
@@ -800,6 +835,26 @@ def pybind_extension(
             compatible_with = compatible_with,
             visibility = visibility,
         )
+
+def _if_wrapped_py_init(wrapped_py_init, if_true = [], if_false = []):
+    if wrapped_py_init == None:
+        return select({
+            Label("//rules_pywrap:config_wrap_py_init"): if_true,
+            "//conditions:default": if_false,
+        })
+
+    return if_true if wrapped_py_init else if_false
+
+# For backward compatibility with the old name
+def pybind_extension(name, default_deps = None, **kwargs):
+    actual_default_deps = ["@pybind11//:pybind11"]
+    if default_deps != None:
+        actual_default_deps = default_deps
+    python_extension(
+        name = name,
+        default_deps = actual_default_deps,
+        **kwargs
+    )
 
 def _pywrap_info_wrapper_impl(ctx):
     #the attribute is called deps not dep to match aspect's attr_aspects
@@ -996,7 +1051,7 @@ def _pywrap_binaries_impl(ctx):
 
     final_binaries = []
     original_to_final_binaries = [
-        "\n\nvvv Shared objects corresondence map, target = {} vvv".format(ctx.label),
+        "\n\nvvv Shared objects correspondence map, target = {} vvv".format(ctx.label),
     ]
     wheel_locations = {}
     for i in range(0, len(pywrap_infos)):

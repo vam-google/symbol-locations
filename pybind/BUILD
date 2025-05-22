@@ -146,6 +146,7 @@ pybind_extension(
         ":second_library",
         ":third_library",
     ],
+    local_defines = ["TARGET_NAME=pybind"],
 )
 
 pybind_extension(
@@ -162,6 +163,7 @@ pybind_extension(
         ":second_library",
         ":third_library",
     ],
+    local_defines = ["TARGET_NAME=pybind_copy"],
 )
 
 pybind_extension(
@@ -330,5 +332,61 @@ cc_test(
         ":common_pybind_aggregated_framework",
         ":common_pybind_aggregated_internal",
         "@gtest//:gtest_main",
+    ],
+)
+
+# Pybind modules with wrapped PyInit_ function
+pybind_extension(
+    name = "pybind_wrapped",
+    srcs = ["pybind.cc"],
+    data = [":static_resource.txt"],
+    deps = [
+        ":fifth_library",
+        ":first_library",
+        ":second_library",
+        ":third_library",
+    ],
+    wrap_py_init = True,
+    local_defines = ["TARGET_NAME=pybind_wrapped"],
+)
+
+pybind_extension(
+    name = "pybind_wrapped_copy",
+    srcs = ["pybind_copy.cc"],
+    deps = [
+        ":first_library",
+        ":second_library",
+        ":third_library",
+    ],
+    wrap_py_init = True,
+    local_defines = ["TARGET_NAME=pybind_wrapped_copy"],
+)
+
+pybind_extension(
+    name = "pybind_wrapped_cc_only",
+    visibility = ["//visibility:public"],
+    deps = [
+        "fourth_library",
+    ],
+    wrap_py_init = True,
+)
+
+pywrap_library(
+    name = "pybind_wrapped_aggregated",
+    deps = [
+        ":pybind_wrapped",
+        ":pybind_wrapped_copy",
+        ":pybind_wrapped_cc_only",
+        "//pybind/sub_pybind:relative_wrapped_import_lib",
+    ],
+)
+
+py_test(
+    name = "pybind_wrapped_py_test",
+    srcs = ["pybind_wrapped_py_test.py"],
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":pybind_wrapped_aggregated",
+        "//pybind/sub_pybind:relative_wrapped_import_lib",
     ],
 )

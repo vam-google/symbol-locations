@@ -13,6 +13,7 @@ test_suite(
         "//pybind:py_common_library_test",
         "//pybind:pybind_py_test",
         "//pybind:pybind_with_starlark_only_py_test",
+        "//pybind:pybind_wrapped_py_test",
         "//pybind:regular_cc_test",
         "//pybind_external:pybind_external_py_test",
         "//pybind_external:pybind_pywrap_external_py_test",

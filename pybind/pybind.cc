@@ -8,7 +8,7 @@ int sub_sub_func(int x) {
   return x << 1;
 }
 
-PYBIND11_MODULE(pybind, m) {
+PYBIND11_MODULE(TARGET_NAME, m) {
   fifth_func(); // needed to  make sure the dynamic library is loaded on Windows
   m.doc() = "pybind11 example plugin";
   m.def("first_func", &first_func, "The first function");

@@ -5,7 +5,7 @@ int nested_pybind_func(int x) {
   return x >> 1;
 }
 
-PYBIND11_MODULE(nested_pybind, m) {
+PYBIND11_MODULE(TARGET_NAME, m) {
   fifth_func(); // needed to  make sure the dynamic library is loaded on Windows
   m.def("nested_pybind_func", &nested_pybind_func, "");
 }
