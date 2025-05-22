@@ -131,7 +131,9 @@ cc_test(
 #
 pybind_extension(
     name = "pybind",
-    srcs = ["pybind.cc"],
+    srcs = select({
+        "//conditions:default": ["pybind.cc"],
+    }),
     common_lib_packages = [
         "",
         "pywrap_external/python",  # non-existent package to test that its Ok
@@ -161,8 +163,9 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
-        ":third_library",
-    ],
+    ] + select({
+        "//conditions:default": [":third_library"],
+    }),
     local_defines = ["TARGET_NAME=pybind_copy"],
 )
 
@@ -356,8 +359,9 @@ pybind_extension(
     deps = [
         ":first_library",
         ":second_library",
-        ":third_library",
-    ],
+    ] + select({
+        "//conditions:default": [":third_library"],
+    }),
     wrap_py_init = True,
     local_defines = ["TARGET_NAME=pybind_wrapped_copy"],
 )
@@ -366,7 +370,7 @@ pybind_extension(
     name = "pybind_wrapped_cc_only",
     visibility = ["//visibility:public"],
     deps = [
-        "fourth_library",
+        ":fourth_library",
     ],
     wrap_py_init = True,
 )

@@ -32,6 +32,9 @@ PywrapFilters = provider(
     },
 )
 
+_SELECT_TYPE = type(select({"//conditions:default": []}))
+_LIST_TYPE = type([])
+
 def pywrap_library(
         name,
         deps,
@@ -787,10 +790,14 @@ def python_extension(
         deps = _if_wrapped_py_init(wrap_py_init,
             [":{}".format(wrapped_cc_library_name)],
             cc_library_deps,
+            cc_library_name,
+            "deps",
         ),
         srcs = _if_wrapped_py_init(wrap_py_init,
-            [Label("//rules_pywrap:wrapped_py_init.cc")],
+            [Label(":wrapped_py_init.cc")],
             srcs,
+            cc_library_name,
+            "srcs",
         ),
         linkstatic = True,
         alwayslink = True,
@@ -836,14 +843,32 @@ def python_extension(
             visibility = visibility,
         )
 
-def _if_wrapped_py_init(wrapped_py_init, if_true = [], if_false = []):
-    if wrapped_py_init == None:
+def _if_wrapped_py_init(wrap_py_init, if_true = [], if_false = [], dep_name = "", dep_type = ""):
+    if wrap_py_init == None:
         return select({
-            Label("//rules_pywrap:config_wrap_py_init"): if_true,
-            "//conditions:default": if_false,
+            Label(":config_wrap_py_init"): _wrap_cc_select(dep_name, dep_type, if_true),
+            "//conditions:default": _wrap_cc_select(dep_name, dep_type, if_false),
         })
 
-    return if_true if wrapped_py_init else if_false
+    return if_true if wrap_py_init else if_false
+
+def _wrap_cc_select(name, dep_type, deps):
+    if type(deps) == _SELECT_TYPE:
+        wrapping_select_target = "_{}_{}".format(name, dep_type)
+        if dep_type == "deps":
+            native.cc_library(
+                name = wrapping_select_target,
+                deps = deps,
+            )
+        else:
+            native.filegroup(
+                name = wrapping_select_target,
+                srcs = deps,
+            )
+
+        return [":{}".format(wrapping_select_target)]
+    else:
+        return deps
 
 # For backward compatibility with the old name
 def pybind_extension(name, default_deps = None, **kwargs):
@@ -901,7 +926,7 @@ _pywrap_info_wrapper = rule(
         "common_lib_packages": attr.string_list(default = []),
         "py_stub_src": attr.label(
             allow_single_file = True,
-            default = Label("//rules_pywrap:pybind_extension.py.tpl"),
+            default = Label(":pybind_extension.py.tpl"),
         ),
         "starlark_only": attr.bool(mandatory = False, default = False),
     },
@@ -1189,12 +1214,9 @@ def _get_common_lib_package_and_name(common_lib_full_name):
 
 def _construct_inverse_common_lib_filters(common_lib_filters):
     inverse_common_lib_filters = {}
-    select_type = type(select({"//conditions:default": []}))
-    list_type = type([])
-
     for common_lib_k, common_lib_v in common_lib_filters.items():
         new_common_lib_k = common_lib_v
-        if type(common_lib_v) == list_type or type(common_lib_v) == select_type:
+        if type(common_lib_v) == _LIST_TYPE or type(common_lib_v) == _SELECT_TYPE:
             new_common_lib_k = "_%s_common_lib_filter" % common_lib_k.rsplit("/", 1)[-1]
             native.cc_library(
                 name = new_common_lib_k,
