@@ -1144,7 +1144,7 @@ def _pywrap_binaries_impl(ctx):
     )
 
     original_to_final_binaries.append(
-        "^^^ Shared objects corresondence map^^^\n\n",
+        "^^^ Shared objects correspondence map^^^\n\n",
     )
     print("\n".join(original_to_final_binaries))
 
